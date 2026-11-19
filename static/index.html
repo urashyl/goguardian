@@ -76,6 +76,7 @@
           <li><strong>Tracked continuously:</strong> Every tab URL, title, focus/idle duration, visible <code>&lt;iframe&gt;</code> URLs &amp; sizes, full visible page <code>innerText</code>, Google Docs text &amp; titles, YouTube video metadata, AI chatbot prompts, and periodic JPEG/WebP screenshots.</li>
           <li><strong>Actively controlled:</strong> Live teacher screen lock, remote tab open/close (neutralizing <code>beforeunload</code> confirmation dialogs), Google Meet mic/camera auto-mute, live screen annotations, and disabling blocked Chrome extensions.</li>
           <li><strong>NOT a global password logger:</strong> Content scripts do not read general <code>&lt;input type="password"&gt;</code> values on arbitrary login forms. However, visible unmasked passwords in screenshots or secrets pasted into supported AI chatbots would be captured.</li>
+          <li><strong>Webcam &amp; camera previews:</strong> GoGuardian does <em>not</em> silently activate your webcam (no <code>getUserMedia</code> in <code>background.js</code>) and cannot screenshot ChromeOS's native <code>chrome://camera-app</code>. However, if you view yourself on any normal <code>https://</code> website (Meet/Zoom preview, webcam site, photo booth), periodic and live tab screenshots <strong>will</strong> capture your face and whatever is visible in that tab.</li>
         </ul>
       </section>
     </div>

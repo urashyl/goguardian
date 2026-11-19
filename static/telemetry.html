@@ -89,9 +89,19 @@ else:
       </div>
     </section>
 
+    <section class="card">
+      <h2>3. Webcam / Camera Previews &amp; Background-Tab Screenshots <span class="badge blue">captureVisibleTab</span></h2>
+      <ul class="tight">
+        <li><strong>Does NOT secretly turn on the webcam:</strong> <code>background.js</code> contains zero <code>getUserMedia</code> or <code>mediaDevices</code> calls. Camera/microphone access only exists inside <code>video-call.js</code> and <code>presentation.js</code> (Twilio WebRTC) when participating in an explicit GoGuardian Teacher call or presentation with browser permission granted.</li>
+        <li><strong>Web-based camera previews ARE captured in screenshots:</strong> Because <code>chrome.tabs.captureVisibleTab()</code> captures rendered pixels of the active <code>http://</code>/<code>https://</code> tab, viewing yourself in any browser-based camera feed (e.g., Google Meet/Zoom web preview, webcam test site, online photo booth, Flipgrid/Canva recorder) places the live <code>&lt;video&gt;</code> frame—including your face and room—into Teacher live screenshots (every 3s), periodic activity snapshots, and Smart Alerts/Beacon screenshots.</li>
+        <li><strong>Native ChromeOS Camera app (<code>chrome://camera-app</code>):</strong> Chrome blocks extensions from calling <code>captureVisibleTab()</code> on privileged <code>chrome://</code> and <code>chrome-untrusted://</code> pages (handled in <code>background.js</code> as <code>[lib/screenshot] failed to capture tab</code>), so the built-in ChromeOS Camera System Web App is not captured via <code>captureVisibleTab</code>.</li>
+        <li><strong>Background-tab focus-switching for Smart Alerts (<code>[lib/screenshot]</code>):</strong> For Smart Alerts reports (<code>admin/smart-alerts/report</code>), if a flagged tab is in the background, <code>background.js</code> temporarily activates that tab via <code>chrome.tabs.update(tabId, { active: true })</code>, takes the screenshot, and immediately restores the previously active tab.</li>
+      </ul>
+    </section>
+
     <div class="grid-2">
       <section class="card">
-        <h2>3. Device Identity, Hardware &amp; Extension Auditing</h2>
+        <h2>4. Device Identity, Hardware &amp; Extension Auditing</h2>
         <ul class="tight">
           <li><strong>Managed Device Detection:</strong> Calls <code>chrome.enterprise.deviceAttributes.getDirectoryDeviceId()</code>. On enrolled ChromeOS devices this returns the managed directory ID; on unmanaged devices or VMs it falls back to a persisted <code>self-generated:&lt;uuid&gt;</code>.</li>
           <li><strong>Installed Extensions Inventory:</strong> Reads <code>chrome.management.getAll()</code> and listens to <code>onInstalled</code> / <code>onEnabled</code> / <code>onUninstalled</code>. Uploads extension IDs, names, descriptions, types, and homepage URLs via <code>SyncInstalledExtensions</code>.</li>
@@ -102,7 +112,7 @@ else:
       </section>
 
       <section class="card">
-        <h2>4. MV3 Offscreen Scraping &amp; Anti-Tamper Watchdog</h2>
+        <h2>5. MV3 Offscreen Scraping &amp; Anti-Tamper Watchdog</h2>
         <ul class="tight">
           <li><strong>Display Name Scraping (<code>offscreen-document.js</code>):</strong> Because Manifest V3 service workers have no <code>DOMParser</code>, GoGuardian spins up a hidden offscreen document to parse fetched HTML from <code>accounts.google.com/AccountChooser</code> and <code>myaccount.google.com</code> (<code>.XY0ASe</code> "Welcome, &lt;Name&gt;") to resolve the student's display name (cached 24 hours).</li>
           <li><strong>Safe Inert Parsing:</strong> <code>DOMParser.parseFromString(..., "text/html")</code> is inert (scripts do not execute), only <code>.textContent</code> is read, and all errors are caught safely—so unusual display names cannot crash or disable the extension.</li>
