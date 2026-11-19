@@ -44,7 +44,7 @@ This repository contains **original documentation and an original Rust web serve
 
 ## Contact
 
-For general research questions, corrections, or feedback, contact: **goguardian@mitch.pro**
+For general research questions, corrections, or feedback, contact: **goguardian@urashyl.dev**
 
 ## License
 
