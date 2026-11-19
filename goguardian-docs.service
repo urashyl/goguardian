@@ -8,6 +8,10 @@ Type=simple
 WorkingDirectory=%h/goguardian
 Environment=HOST=127.0.0.1
 Environment=PORT=8080
+# Lingering is a systemd-logind account setting (/var/lib/systemd/linger/<user>),
+# not a unit-file directive. Attempt best-effort enablement on start; use
+# `install-service.sh` or `sudo loginctl enable-linger "$USER"` if polkit blocks it.
+ExecStartPre=-/usr/bin/env loginctl enable-linger %u
 ExecStart=%h/goguardian/target/release/goguardian-docs
 Restart=always
 RestartSec=3

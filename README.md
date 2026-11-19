@@ -40,11 +40,17 @@ Read-only backend endpoints:
 
 ## Running 24/7 with systemd (User Service)
 
-To run the documentation server continuously under `~/goguardian` on port `8080`:
+To run the documentation server continuously under `~/goguardian` on port `8080` (and keep it running after you log out):
 
 ```bash
 git clone https://github.com/urashyl/goguardian.git ~/goguardian
 cd ~/goguardian
+./install-service.sh
+```
+
+Or run the steps manually:
+
+```bash
 cargo build --release
 mkdir -p ~/.config/systemd/user
 cp goguardian-docs.service ~/.config/systemd/user/
@@ -52,6 +58,14 @@ systemctl --user daemon-reload
 systemctl --user enable --now goguardian-docs.service
 loginctl enable-linger "$USER"
 ```
+
+Verify lingering is enabled so the user unit persists after logout (`Linger=yes`):
+
+```bash
+loginctl show-user "$USER" -p Linger
+```
+
+If `loginctl enable-linger "$USER"` fails due to polkit permissions, run `sudo loginctl enable-linger "$USER"`.
 
 Note: [goguardian-docs.service](goguardian-docs.service) binds `127.0.0.1:8080` by default for use behind a reverse proxy (Caddy, Nginx, or Cloudflare Tunnel). Change `Environment=HOST=127.0.0.1` to `Environment=HOST=0.0.0.0` if you want to expose port `8080` directly.
 
