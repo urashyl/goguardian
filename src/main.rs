@@ -5,6 +5,7 @@ use std::net::{TcpListener, TcpStream};
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
+use std::time::Duration;
 
 const HEALTH_JSON: &str = r#"{"status":"ok","service":"goguardian-docs","backend":"rust"}"#;
 const META_JSON: &str = r#"{"extension_version":"4.1.246","manifest_version":3,"content_scripts":22,"microservices":10,"ai_adapters":7,"pusher_channel_types":6}"#;
@@ -18,7 +19,9 @@ enum Route {
 }
 
 fn resolve_route(raw_target: &str) -> Route {
-    let path = raw_target.split('?').next().unwrap_or(raw_target);
+    let raw_path = raw_target.split('?').next().unwrap_or(raw_target);
+    let trimmed_end = raw_path.trim_end_matches('/');
+    let path = if trimmed_end.is_empty() { "/" } else { trimmed_end };
     match path {
         "/api/health" => Route::ApiHealth,
         "/api/meta" => Route::ApiMeta,
@@ -125,6 +128,7 @@ fn write_response(
 }
 
 fn handle_client(mut stream: TcpStream, static_dir: &Path) {
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
     let mut reader = match stream.try_clone() {
         Ok(cloned) => BufReader::new(cloned),
         Err(_) => return,
@@ -282,6 +286,32 @@ mod tests {
             resolve_route("/scripts"),
             Route::StaticFile("scripts.html".into())
         );
+    }
+
+    #[test]
+    fn maps_trailing_slash_routes() {
+        assert_eq!(
+            resolve_route("/telemetry/"),
+            Route::StaticFile("telemetry.html".into())
+        );
+        assert_eq!(
+            resolve_route("/ai-and-docs/"),
+            Route::StaticFile("ai-and-docs.html".into())
+        );
+        assert_eq!(
+            resolve_route("/filtering/"),
+            Route::StaticFile("filtering.html".into())
+        );
+        assert_eq!(
+            resolve_route("/teacher-control/"),
+            Route::StaticFile("teacher-control.html".into())
+        );
+        assert_eq!(
+            resolve_route("/scripts/"),
+            Route::StaticFile("scripts.html".into())
+        );
+        assert_eq!(resolve_route("/api/health/"), Route::ApiHealth);
+        assert_eq!(resolve_route("///"), Route::StaticFile("index.html".into()));
     }
 
     #[test]

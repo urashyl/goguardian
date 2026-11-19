@@ -10,7 +10,6 @@
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="/">
-        <div class="logo">GG</div>
         <div>
           <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
           <span class="brand-sub">Complete Inventory of goguardian-1.js – 22.js &amp; Internal IPC</span>
@@ -51,7 +50,7 @@
           <tr><th>Script</th><th>Matches / Scope</th><th>Timing &amp; Frames</th><th>World</th><th>Verified Functionality</th></tr>
         </thead>
         <tbody>
-          <tr data-world="ISOLATED"><td><code>goguardian-1.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. ERP)</td><td><code>document_idle</code>, all_frames, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Full-page <code>innerText</code> &amp; element-count extractor (<code>MutationObserver</code> -&gt; <code>contentExtractor/newContentAvailable</code>).</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-1.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks/ERP)</td><td><code>document_idle</code>, all_frames, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Full-page <code>innerText</code> &amp; element-count extractor (<code>MutationObserver</code> -&gt; <code>contentExtractor/newContentAvailable</code>).</td></tr>
           <tr data-world="ISOLATED"><td><code>goguardian-2.js</code></td><td><code>*://docs.google.com/*</code></td><td><code>document_idle</code>, top frame</td><td><span class="badge">ISOLATED</span></td><td>Scrapes <code>#docs-title-widget</code> document title changes -&gt; <code>entitiesDocs/titleChanged</code>.</td></tr>
           <tr data-world="ISOLATED"><td><code>goguardian-3.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks)</td><td><code>document_idle</code>, top frame</td><td><span class="badge">ISOLATED</span></td><td>Renders the floating GoGuardian Privacy Banner React overlay when enabled.</td></tr>
           <tr data-world="MAIN"><td><code>goguardian-4.js</code></td><td><code>*://docs.google.com/*</code></td><td><code>document_start</code>, all_frames</td><td><span class="badge amber">MAIN</span></td><td>Sets <code>_docs_force_html_by_ext</code> &amp; <code>_docs_annotate_canvas_by_ext</code> so Docs exposes SVG text annotations.</td></tr>

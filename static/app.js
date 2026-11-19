@@ -2,7 +2,8 @@
   "use strict";
 
   // Highlight active navigation link
-  const currentPath = window.location.pathname.replace(/\.html$/, "") || "/";
+  const currentPath =
+    window.location.pathname.replace(/\.html$/, "").replace(/\/+$/, "") || "/";
   document.querySelectorAll(".nav a").forEach((link) => {
     const href = link.getAttribute("href");
     if (href === currentPath || (currentPath === "/index" && href === "/")) {
