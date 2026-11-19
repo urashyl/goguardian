@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Filtering, Panther &amp; SafeTranslate — GoGuardian Docs</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <div class="logo">GG</div>
+        <div>
+          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-sub">webRequest Blocking Pipeline, Panther &amp; SafeTranslate</span>
+        </div>
+      </a>
+      <nav class="nav" aria-label="Documentation sections">
+        <a href="/">Overview</a>
+        <a href="/telemetry">Telemetry &amp; Device</a>
+        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
+        <a href="/filtering">Filtering &amp; Panther</a>
+        <a href="/teacher-control">Teacher Control</a>
+        <a href="/scripts">22 Scripts &amp; IPC</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>URL Filtering, Panther Categorization &amp; SafeTranslate</h1>
+      <p>
+        How GoGuardian evaluates every navigation inside <code>chrome.webRequest.onBeforeRequest</code>,
+        categorizes unknown domains, unwraps Google Translate proxies, and applies policy schedules.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>1. The 4-Layer <code>webRequest.onBeforeRequest</code> Pipeline <span class="badge blue">Blocking</span></h2>
+      <p class="muted">
+        Because enterprise-managed ChromeOS extensions still receive <code>webRequestBlocking</code>
+        in Manifest V3, GoGuardian intercepts <code>main_frame</code>, <code>sub_frame</code>, and
+        <code>object</code> requests across four sequential rule engines, plus <code>tabs.onCreated</code>
+        and <code>tabs.onUpdated</code> listeners for non-network tabs or dynamic policy changes:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Scope</th><th>Mechanism</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Admin Site Filter</strong></td>
+            <td><code>main_frame</code>, <code>object</code>, and optionally <code>sub_frame</code></td>
+            <td>Evaluates explicit site allow/block patterns, Panther site categories, <code>safeMode</code>, <code>blockDirectIp</code>, parent site filters/pauses, and active bypasses. Note: <code>sub_frame</code> filtering is skipped unless <code>blockSubFrames</code> is <code>true</code> (and skipped under <code>safeMode</code>).</td>
+          </tr>
+          <tr>
+            <td><strong>2. Admin Block Consumer Accounts</strong></td>
+            <td><code>accounts.google.com</code>, <code>accounts.youtube.com</code></td>
+            <td>Blocks configured consumer sign-in/sign-out paths (e.g., <code>AddSession</code>, <code>Logout</code>, <code>accounts/Logout2</code>) to prevent switching away from managed accounts.</td>
+          </tr>
+          <tr>
+            <td><strong>3. Teacher Scene</strong></td>
+            <td><code>main_frame</code> &amp; <code>object</code> only</td>
+            <td>Enforces active teacher Lesson Plan allowlists or blocklists fetched from <code>GET /v1/teacher/lesson-plans</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Admin Safe Search</strong></td>
+            <td>Supported search engines</td>
+            <td>Rewrites search URLs via <code>redirectUrl</code> to enforce SafeSearch parameters when <code>safeSearchEnabled</code> is active.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section class="card">
+        <h2>2. Panther Lookup &amp; Non-Blocking Fallback</h2>
+        <p class="muted">
+          When a domain isn't matched by an explicit site allow/block rule, Admin Site Filter checks a
+          local cache of URL categories (<code>admin.urlCategories</code>).
+        </p>
+        <ul class="tight">
+          <li><strong>Cached hit:</strong> Evaluated synchronously inside <code>onBeforeRequest</code> and immediately redirected to <code>https://blocked.goguardian.com/...</code> if a category is blocked.</li>
+          <li><strong>Cache miss:</strong> Rather than stalling the HTTP request synchronously, GoGuardian lets the initial request pass and launches an asynchronous <code>POST https://panther.goguardian.com/api/v2/categories</code> lookup with <code>{ cleanUrl, rawUrl }</code>. If Panther returns a blocked category ID, the extension redirects the tab (or redirects subframes via <code>goguardian-10.js</code>).</li>
+          <li><strong>URL Normalization:</strong> Feature flag <code>adminCleanUrlParsingV2Enabled</code> strips trailing dots, removes <code>www.</code>, preserves path/query, and normalizes IPv6-mapped IPv4 addresses (<code>[::ffff:...]</code>).</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>3. Bypass Passwords &amp; Policy Schema</h2>
+        <p class="muted">
+          When blocked, <code>goguardian-7.js</code> runs on <code>blocked.goguardian.com</code> and
+          can inject a bypass password prompt (<code>.bypass-footnote</code>):
+        </p>
+        <ul class="tight">
+          <li>Submitted passwords are verified against <code>GET /v1/admin/validate-bypass-password</code>.</li>
+          <li>If valid, the backend returns <code>durationMs</code> and the extension caches a temporary hostname bypass in memory.</li>
+        </ul>
+        <h3 style="margin-top:0.9rem;"><code>GET /v1/policy</code> Top-Level Sections</h3>
+        <pre>{
+  "privacySettings":  { /* chromebookOnly, onlyMonitorManagedDevices, scheduling */ },
+  "adminSettings":    { /* orgSettings, categories, sites, videoPolicy, flaggedTerms, apps, overrides */ },
+  "teacherSettings":  { /* active, allowActiveSessionStatus */ },
+  "beaconSettings":   { /* active, pause, sshSettings, tvSettings */ },
+  "parentSettings":   { /* active, siteFilter, onDemandInternetPause, scheduledInternetPause */ },
+  "smartAlertsSettings": { /* blocks, messages, allowlist, explicitImageSettings, allowlistV2 */ },
+  "dnsOnPremSettings":{ /* enabled, checkInIntervalMs */ },
+  "discoverSettings": { /* active */ },
+  "aiEventsSettings": { /* adapterSettings (live AI DOM selectors) */ }
+}</pre>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>4. SafeTranslate Unwrapper (Interactive) <span class="badge amber">background.js</span></h2>
+      <p class="muted">
+        When <code>safeTranslateEnabled</code> is enabled, GoGuardian detects proxy URLs hosted on
+        <code>translate.google.com</code> (extracting the <code>u=</code> query parameter) and
+        <code>*.translate.goog</code> (reversing Google Translate's hostname encoding—handling
+        <code>_x_tr_hp</code> prefixes, <code>_x_tr_enc</code> <code>1-</code>/<code>0-</code>
+        punycode <code>xn--</code> flags, single hyphens back to dots, and double hyphens
+        <code>--</code> back to <code>-</code>—while stripping <code>_x_tr_*</code> params) before
+        filtering the true destination URL.
+      </p>
+      <div class="controls">
+        <input type="text" id="safetranslate-input" value="https://discord-com.translate.goog/channels/@me?_x_tr_sl=es&_x_tr_tl=en" />
+        <button class="btn" id="safetranslate-btn">Unwrap URL</button>
+      </div>
+      <div class="controls">
+        <button class="btn secondary" data-preset-url="https://example--site-org.translate.goog/path?_x_tr_sl=fr&_x_tr_tl=en&q=1">Hyphenated Domain</button>
+        <button class="btn secondary" data-preset-url="https://translate.google.com/translate?sl=auto&tl=en&u=https://example.com/test">translate.google.com?u=</button>
+        <button class="btn secondary" data-preset-url="https://0-mnchen-3ya.translate.goog/?_x_tr_enc=0&_x_tr_sl=de">Punycode (_x_tr_enc=0)</button>
+      </div>
+      <pre id="safetranslate-out"></pre>
+    </section>
+
+    <section class="card">
+      <h2>5. Out-of-School Scheduling &amp; Managed-Only Switches</h2>
+      <p class="muted" style="margin:0;">
+        Both <code>privacySettings</code> and <code>adminSettings.orgSettings</code> include a
+        <code>scheduling</code> object (<code>enabled</code>, <code>monitorAtSchoolOnly</code>,
+        <code>filterAtSchoolOnly</code>, <code>ipRanges</code>, and <code>utcDayIntervals</code>)
+        alongside <code>onlyMonitorManagedDevices</code> and <code>onlyFilterManagedDevices</code>.
+        When scheduling and managed-only restrictions are set to <code>false</code>, monitoring and
+        filtering stay active 24/7 regardless of network location, time of day, or whether the Chrome
+        profile is on a school-managed Chromebook or an unmanaged device.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>MIT Licensed Documentation &bull; Contact: <a href="mailto:goguardian@mitch.pro">goguardian@mitch.pro</a></span>
+    <span id="rust-status" class="badge">Checking Rust backend...</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+[package]
+name = "goguardian-docs"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Technical documentation site and minimal Rust web server covering GoGuardian MV3 browser extension telemetry and control architecture."
+
+[dependencies]

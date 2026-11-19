@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GoGuardian MV3 Technical Documentation — Overview</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <div class="logo">GG</div>
+        <div>
+          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-sub">Technical analysis of Extension v4.1.246 telemetry &amp; control</span>
+        </div>
+      </a>
+      <nav class="nav" aria-label="Documentation sections">
+        <a href="/">Overview</a>
+        <a href="/telemetry">Telemetry &amp; Device</a>
+        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
+        <a href="/filtering">Filtering &amp; Panther</a>
+        <a href="/teacher-control">Teacher Control</a>
+        <a href="/scripts">22 Scripts &amp; IPC</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>What GoGuardian Tracks &amp; Controls in the Browser</h1>
+      <p>
+        Independent technical documentation of the GoGuardian Chrome Manifest V3 extension
+        (<code>v4.1.246</code>), compiled from static inspection of its manifest, service worker,
+        offscreen document, and 22 content scripts. This guide explains the exact browser APIs,
+        network microservices, real-time channels, and on-device models involved.
+      </p>
+      <div class="stats">
+        <div class="stat"><div class="num">22</div><div class="lbl">Content Scripts (<code>1.js</code>–<code>22.js</code>)</div></div>
+        <div class="stat"><div class="num">10</div><div class="lbl">Backend Microservices</div></div>
+        <div class="stat"><div class="num">7</div><div class="lbl">AI Chatbot Adapters</div></div>
+        <div class="stat"><div class="num">6</div><div class="lbl">Pusher Real-Time Channels</div></div>
+      </div>
+    </section>
+
+    <div class="callout warn">
+      <strong>Copyright &amp; Scope Notice:</strong> Proprietary GoGuardian source bundles, assets,
+      and ML weights are <strong>not</strong> redistributed in this repository due to copyright.
+      All explanations here are original technical documentation based on static inspection.
+      No student, teacher, district, or credential data is included.
+    </div>
+
+    <div class="grid-2">
+      <section class="card">
+        <h2>Manifest V3 Permissions <span class="badge blue">manifest.json</span></h2>
+        <p class="muted">
+          Because GoGuardian is deployed via Chrome Enterprise policy on managed profiles, it retains
+          privileged permissions—including <code>webRequestBlocking</code> inside Manifest V3.
+        </p>
+        <ul class="tight">
+          <li><code>&lt;all_urls&gt;</code> host permissions + <code>webRequest</code> / <code>webRequestBlocking</code></li>
+          <li><code>tabs</code>, <code>activeTab</code>, <code>webNavigation</code>, <code>scripting</code> (including dynamic script injection)</li>
+          <li><code>enterprise.deviceAttributes</code> (managed Chromebook Directory Device ID lookup)</li>
+          <li><code>management</code> (enumerate, audit, and disable other installed Chrome extensions)</li>
+          <li><code>nativeMessaging</code> (bridges to <code>chromium.goguardian.ggwindows</code> on Windows)</li>
+          <li><code>system.cpu</code> &amp; <code>system.memory</code> (hardware profiling)</li>
+          <li><code>offscreen</code> (hidden DOM parser for Google account HTML scraping)</li>
+          <li><code>identity</code>, <code>identity.email</code>, <code>idle</code>, <code>alarms</code>, <code>notifications</code>, <code>unlimitedStorage</code></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>At-a-Glance: What Is vs. Isn't Tracked</h2>
+        <p class="muted">A quick summary of the biggest behavioral findings verified in code:</p>
+        <ul class="tight">
+          <li><strong>Tracked continuously:</strong> Every tab URL, title, focus/idle duration, visible <code>&lt;iframe&gt;</code> URLs &amp; sizes, full visible page <code>innerText</code>, Google Docs text &amp; titles, YouTube video metadata, AI chatbot prompts, and periodic JPEG/WebP screenshots.</li>
+          <li><strong>Actively controlled:</strong> Live teacher screen lock, remote tab open/close (neutralizing <code>beforeunload</code> confirmation dialogs), Google Meet mic/camera auto-mute, live screen annotations, and disabling blocked Chrome extensions.</li>
+          <li><strong>NOT a global password logger:</strong> Content scripts do not read general <code>&lt;input type="password"&gt;</code> values on arbitrary login forms. However, visible unmasked passwords in screenshots or secrets pasted into supported AI chatbots would be captured.</li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>Backend Microservice Topology <span class="badge green">10 Services + Pusher + Twilio</span></h2>
+      <p class="muted">
+        Rather than a single endpoint, the extension's service worker routes telemetry, policy,
+        categorization, and ML inference across ten dedicated GoGuardian domains (most sending
+        gzip-compressed JSON bodies):
+      </p>
+      <table>
+        <thead>
+          <tr><th>Client Name</th><th>Host</th><th>Primary Responsibility</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ExtensionGateway</code></td><td><code>prod-ext-gateway.goguardian.com</code></td><td>Auth/session refresh, <code>/v1/policy</code>, feature flags, Pusher auth, bypass passwords, video metadata, extension sync, lesson plans, off-task ML, check-ins, explicit image model manifest</td></tr>
+          <tr><td><code>Zephyr</code></td><td><code>prod-zephyr.goguardian.com</code></td><td>Core browsing telemetry ingestion (<code>POST /v1/entities</code>) — tabs, titles, iframes, Docs titles, flagged terms</td></tr>
+          <tr><td><code>Panther</code></td><td><code>panther.goguardian.com</code></td><td>Real-time URL categorization (<code>POST /api/v2/categories</code>)</td></tr>
+          <tr><td><code>ExtScreenshots</code></td><td><code>screenshots.goguardian.com</code></td><td>Periodic activity snapshots &amp; teacher live-mode screenshots</td></tr>
+          <tr><td><code>Inquisition</code></td><td><code>inquisition.goguardian.com</code></td><td>Active classroom session polling (<code>GET /v3/ext/livemode</code> every 15s)</td></tr>
+          <tr><td><code>AIEventsIntakeService</code></td><td><code>ai-events-intake.goguardian.com</code></td><td>AI chatbot prompt/turn capture ingestion (<code>POST /v1/submit</code>)</td></tr>
+          <tr><td><code>BeaconGoFullpagePredictor</code></td><td><code>beacon-fullpage-predictor.goguardian.com</code></td><td>Full-page &amp; search/AI input analysis for student safety alerts</td></tr>
+          <tr><td><code>GoX3Predictor</code></td><td><code>prod-go-x3-predictor.goguardian.com</code></td><td>Smart Alerts page content classification (explicit, proxy, game)</td></tr>
+          <tr><td><code>CountVonCount</code></td><td><code>countvoncount.goguardian.com</code></td><td>Extension structured logs and operational metrics</td></tr>
+          <tr><td><code>Whiteboard</code></td><td><code>whiteboard.goguardian.com</code></td><td>Teacher whiteboard / checkup support service</td></tr>
+        </tbody>
+      </table>
+      <p class="muted" style="margin-top:0.75rem;">
+        Additional auxiliary hosts: <code>checkup.goguardian.com</code> (diagnostics),
+        <code>https://extension.goguardian/ping</code> (on-prem/proxy reachability check),
+        Pusher (cluster <code>goguardian</code> for live commands), and Twilio WebRTC
+        (<code>wss://sdkgw.&lt;region&gt;.twilio.com</code> for teacher video calls &amp; screen presentations).
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Explore Each Subsystem</h2>
+      <div class="grid-3">
+        <div>
+          <h3><a href="/telemetry">1. Telemetry &amp; Device &rarr;</a></h3>
+          <p class="muted">Entity flushing, <code>captureVisibleTab</code>, <code>about:blank</code> + iframe logging, hardware/extension profiling, and the MV3 offscreen HTML scraper.</p>
+        </div>
+        <div>
+          <h3><a href="/ai-and-docs">2. AI, Docs &amp; ML &rarr;</a></h3>
+          <p class="muted">Server-pushed AI chatbot adapters, Google Docs HTML forcing, YouTube player hooks, off-task ML scoring, Beacon, and TF.js image scanning.</p>
+        </div>
+        <div>
+          <h3><a href="/filtering">3. Filtering &amp; Panther &rarr;</a></h3>
+          <p class="muted">4-layer <code>webRequest</code> pipeline, <code>sub_frame</code> rules, Panther lookups, bypass passwords, and an interactive <code>*.translate.goog</code> decoder.</p>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:0.6rem;">
+        <div>
+          <h3><a href="/teacher-control">4. Teacher Live Control &rarr;</a></h3>
+          <p class="muted">Pusher channels, 3-second <code>LiveState v6</code> streaming, screen lock, <code>beforeunload</code> removal, Google Meet auto-mute, and live screen annotations.</p>
+        </div>
+        <div>
+          <h3><a href="/scripts">5. All 22 Scripts &amp; IPC &rarr;</a></h3>
+          <p class="muted">Filterable reference matrix of <code>goguardian-1.js</code> through <code>22.js</code> and all internal <code>chrome.runtime</code> IPC channels.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Contact &amp; Feedback</h2>
+      <p class="muted" style="margin:0;">
+        For general research questions, technical corrections, or documentation feedback, email
+        <a href="mailto:goguardian@mitch.pro">goguardian@mitch.pro</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>MIT Licensed Documentation &bull; Contact: <a href="mailto:goguardian@mitch.pro">goguardian@mitch.pro</a></span>
+    <span id="rust-status" class="badge">Checking Rust backend...</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

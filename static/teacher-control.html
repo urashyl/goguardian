@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Live Control Plane — GoGuardian Docs</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <div class="logo">GG</div>
+        <div>
+          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-sub">Inquisition Polling, Pusher Commands, LiveState v6 &amp; Twilio WebRTC</span>
+        </div>
+      </a>
+      <nav class="nav" aria-label="Documentation sections">
+        <a href="/">Overview</a>
+        <a href="/telemetry">Telemetry &amp; Device</a>
+        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
+        <a href="/filtering">Filtering &amp; Panther</a>
+        <a href="/teacher-control">Teacher Control</a>
+        <a href="/scripts">22 Scripts &amp; IPC</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Teacher Live Control Plane (Pusher &amp; Twilio WebRTC)</h1>
+      <p>
+        How GoGuardian Teacher discovers active classroom sessions, streams student screens every
+        3 seconds, and pushes remote browser commands in real time.
+      </p>
+    </section>
+
+    <div class="grid-2">
+      <section class="card">
+        <h2>1. Session Discovery &amp; <code>LiveState v6</code> <span class="badge blue">3s / 15s</span></h2>
+        <ul class="tight">
+          <li><strong>Classroom Polling (<code>Inquisition</code>):</strong> Every <strong>15 seconds</strong> (<code>CLASSROOM_SESSIONS_INTERVAL_MS</code>), the extension calls <code>GET https://inquisition.goguardian.com/v3/ext/livemode</code> to check for active sessions, present teachers, teacher capabilities, and whether <code>offTaskAlertsEnabled</code> or <code>instrumentationEnabled</code> is active.</li>
+          <li><strong>LiveState Streaming (<code>v6</code>):</strong> During an active class, GoGuardian transmits a compressed <code>LiveState</code> snapshot every <strong>3 seconds</strong> (<code>LIVE_STATE_INTERVAL_MS</code>, max 20 KB, 20s TTL) with delta frames enabled (<code>teacherStateDeltaFramesEnabled</code>).</li>
+          <li><strong>Contents of a LiveState Frame:</strong> Full map of open tabs (tab ID, title, URL, favicon, <code>active</code>, <code>lastActiveMs</code>, <code>isFocused</code>, active videos), <code>idle</code> state &amp; duration in milliseconds, <code>locked</code> state, active <code>lessonPlanId</code>, OS / Windows native host connection status, and the latest uploaded screenshot URL (<code>WebP</code> or <code>JPEG</code>).</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>2. Remote Teacher Interventions</h2>
+        <ul class="tight">
+          <li><strong>Screen Lock (<code>lock.html</code> / <code>lock.js</code>):</strong> Triggered via Pusher <code>client-shadow</code> (<code>locked: true</code>), locking the student's browser view behind a teacher message overlay.</li>
+          <li><strong>Remote Tab Open / Close + <code>beforeunload</code> Bypass:</strong> Shadow <code>tabCommands</code> can open or close tabs remotely. To prevent websites from trapping tabs with "Leave site? Changes you made may not be saved" prompts, <code>goguardian-13.js</code> (in <code>MAIN</code> world) nulls <code>window.onbeforeunload</code> and calls <code>stopImmediatePropagation()</code> on <code>beforeunload</code> events.</li>
+          <li><strong>Google Meet Auto-Mute (<code>goguardian-6.js</code>):</strong> On <code>meet.google.com</code>, locates microphone and camera controls (<code>[data-is-muted]</code>) and programmatically clicks them when instructed.</li>
+          <li><strong>Live Screen Annotation (<code>goguardian-15.js</code>):</strong> Draws teacher pointer/pen annotations directly over the student's active tab via <code>client-annotate-screen-request</code>, calibrated with viewport scroll and DPR telemetry from <code>goguardian-14.js</code>.</li>
+          <li><strong>Announcements, Chat &amp; Check-Ins:</strong> Mounts React announcement overlays (<code>goguardian-9.js</code>), two-way teacher chat (<code>chat.html</code>), and interactive student check-ins (<code>checkin.html</code>).</li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>3. Pusher Real-Time Channel &amp; Event Matrix <span class="badge green">Cluster: goguardian</span></h2>
+      <p class="muted">
+        Authentication for private/presence Pusher channels is signed by
+        <code>GET https://prod-ext-gateway.goguardian.com/v1/pusher/auth</code> (passing client
+        type <code>extension</code>, OS, capabilities, and <code>liveStateVersion=6</code>).
+      </p>
+      <table>
+        <thead>
+          <tr><th>Channel Pattern</th><th>Subscribed Events</th><th>Behavior</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>private-account.&lt;accountId&gt;</code></td>
+            <td><code>admin-policies-updated</code></td>
+            <td>Triggers an immediate <code>/v1/policy</code> refresh rather than waiting for the 15-minute poll interval.</td>
+          </tr>
+          <tr>
+            <td><code>private-subaccount.&lt;subAccountId&gt;</code></td>
+            <td>
+              <code>client-shadow</code><br />
+              <code>client-force-live-state</code><br />
+              <code>client-request-screenshot-resolution-increase</code><br />
+              <code>client-annotate-screen-request</code>
+            </td>
+            <td>Delivers lock state, lesson plan scene changes, and <code>tabCommands</code>; forces immediate screenshot/state capture; bumps screenshot resolution; renders live teacher screen drawings.</td>
+          </tr>
+          <tr>
+            <td><code>presence-session.&lt;sessionId&gt;</code></td>
+            <td><code>SetOffTaskAlertsState</code></td>
+            <td>Toggles AI off-task scoring (<code>TeacherPredictTaskiness</code>) on or off mid-class.</td>
+          </tr>
+          <tr>
+            <td><code>presence-student.&lt;subAccountId&gt;-session.&lt;sessionId&gt;</code></td>
+            <td><code>client-chat-message</code></td>
+            <td>Streams real-time teacher/student chat messages alongside <code>GET /v1/teacher/chat</code>.</td>
+          </tr>
+          <tr>
+            <td><code>presence-call.&lt;callId&gt;</code></td>
+            <td><code>call-archived</code></td>
+            <td>Coordinates call teardown for teacher-student video calls and presentations.</td>
+          </tr>
+          <tr>
+            <td><code>private-session-instrumentation.student.&lt;id&gt;</code></td>
+            <td>—</td>
+            <td>Classroom session instrumentation channel when enabled by the session.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>4. Twilio WebRTC Video Calls &amp; Screen Presentations</h2>
+      <p class="muted" style="margin:0;">
+        Teacher video calls (<code>video-call.js</code> / <code>video-call-ui.html</code>) and
+        teacher screen presentations (<code>presentation.js</code> / <code>teacher-presentation.html</code>)
+        connect over Twilio's WebRTC signaling gateway (<code>wss://sdkgw.&lt;region&gt;.twilio.com</code>).
+        The extension enforces explicit call-consent and recording-consent state machines via IPC
+        (<code>call/consentPending</code>, <code>call/recordingConsentChanged</code>) and can share
+        the screen directly via <code>navigator.mediaDevices.getDisplayMedia()</code>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>MIT Licensed Documentation &bull; Contact: <a href="mailto:goguardian@mitch.pro">goguardian@mitch.pro</a></span>
+    <span id="rust-status" class="badge">Checking Rust backend...</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browsing, Screenshots, about:blank &amp; Device Profiling — GoGuardian Docs</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <div class="logo">GG</div>
+        <div>
+          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-sub">Telemetry, Screenshots, about:blank &amp; Device Profiling</span>
+        </div>
+      </a>
+      <nav class="nav" aria-label="Documentation sections">
+        <a href="/">Overview</a>
+        <a href="/telemetry">Telemetry &amp; Device</a>
+        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
+        <a href="/filtering">Filtering &amp; Panther</a>
+        <a href="/teacher-control">Teacher Control</a>
+        <a href="/scripts">22 Scripts &amp; IPC</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Browsing Telemetry, Screenshots, <code>about:blank</code> &amp; Device Profiling</h1>
+      <p>
+        How GoGuardian tracks tabs, iframes, viewport dimensions, visible pixels, hardware specs,
+        installed extensions, and even user display names inside Manifest V3.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>1. Tab &amp; Browsing Activity (<code>Zephyr /v1/entities</code>) <span class="badge blue">60s / 1s flush</span></h2>
+      <p class="muted">
+        GoGuardian maintains an in-memory and LevelDB-backed Redux store tracking every open browser
+        window and tab. Updates are batched and uploaded via <code>WriteEntitySet</code> every
+        <strong>60 seconds</strong> under normal monitoring, or every <strong>1 second</strong> when a
+        teacher enables increased flush rate during a live session.
+      </p>
+      <ul class="tight">
+        <li><strong>Tab metadata:</strong> Tab ID, normalized URL (up to 131,072 chars), page title, favicon URL, <code>active</code> state, window <code>isFocused</code> state, and <code>startTimeMs</code>/<code>endTimeMs</code> viewing intervals.</li>
+        <li><strong>User idle tracking:</strong> Queries <code>chrome.idle</code> to attach <code>currentState</code> (<code>active</code> / <code>idle</code> / <code>locked</code>) and <code>durationMs</code>.</li>
+        <li><strong>Iframe metadata (<code>goguardian-20.js</code>):</strong> Injects into all frames and reports frame dimensions (<code>width</code>, <code>height</code>), <code>visible</code> status, and iframe <code>title</code> back to the service worker.</li>
+        <li><strong>Viewport &amp; scroll telemetry (<code>goguardian-14.js</code>):</strong> Reports <code>scrollX</code>, <code>scrollY</code>, <code>windowWidth</code>, <code>windowHeight</code>, and <code>devicePixelRatio</code> to align screenshots and live teacher annotations.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>2. Screenshots &amp; How <code>about:blank</code> + Iframes Are Handled <span class="badge amber">goguardian-21.js</span></h2>
+      <p class="muted">
+        All standard screenshots pass through a single helper in <code>background.js</code>
+        (<code>[lib/screenshot]</code>), which branches depending on whether the active tab URL starts
+        with <code>about:blank</code>:
+      </p>
+      <pre>activeTab = chrome.tabs.query({ active: true, windowId })
+if (!url.startsWith("about:blank")):
+    capture via chrome.tabs.captureVisibleTab(windowId, { format: "jpeg"|"webp", quality })
+else:
+    if top-frame origin matches ERP exclusion (*://*.erplinq.com/* or *://esd.eschooldata.com/*):
+        skip screenshot
+    else:
+        dynamically inject goguardian-21.js into frameIds: [0]
+        render document.body with html2canvas-pro (7s timeout) -> JPEG/PNG dataUrl</pre>
+      <div class="grid-2" style="margin-top:0.9rem;">
+        <div>
+          <h3>What Shows Up Visually</h3>
+          <ul class="tight">
+            <li><strong>Regular pages:</strong> Pixel-accurate JPEG/WebP capture of the visible browser viewport via <code>captureVisibleTab</code>.</li>
+            <li><strong>Direct <code>about:blank</code> DOM:</strong> Visible—<code>goguardian-21.js</code> (not listed in <code>manifest.json</code>, injected dynamically via <code>chrome.scripting.executeScript</code>) draws <code>document.body</code> using <code>html2canvas-pro</code>.</li>
+            <li><strong>Same-origin <code>&lt;iframe&gt;</code> in <code>about:blank</code>:</strong> Visible—rendered into the canvas when <code>contentDocument.body</code> has child nodes.</li>
+            <li><strong>Cross-origin <code>&lt;iframe&gt;</code> in <code>about:blank</code>:</strong> Skipped visually—Same-Origin Policy blocks <code>contentDocument</code> access, so <code>goguardian-21.js</code> tags the frame with <code>data-html2canvas-ignore="true"</code>. <em>(Note: Teacher video-call screen sharing in <code>video-call.js</code> uses <code>getDisplayMedia</code>, which captures raw display pixels regardless of iframes.)</em></li>
+          </ul>
+        </div>
+        <div>
+          <h3>What Still Gets Logged Behind the Scenes</h3>
+          <ul class="tight">
+            <li><strong><code>submitAboutBlankIframes</code>:</strong> Inside <code>shared/tabs/refreshTabs</code>, whenever a tab is <code>about:blank</code>, GoGuardian calls <code>chrome.webNavigation.getAllFrames({ tabId })</code>.</li>
+            <li>For every subframe (<code>frameId !== 0</code>) with a non-<code>about:blank</code> URL, it queries <strong>Panther</strong> (<code>/api/v2/categories</code>) for the embedded URL's categories.</li>
+            <li>It records <code>{ url, categoryIds, frameId }</code> on the tab entity and uploads it to <code>Zephyr /v1/entities</code>.</li>
+            <li>Content scripts with <code>"all_frames": true</code> and <code>"match_about_blank": true</code> still inject inside the embedded iframe's origin to collect text, flagged terms, and YouTube/image telemetry.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid-2">
+      <section class="card">
+        <h2>3. Device Identity, Hardware &amp; Extension Auditing</h2>
+        <ul class="tight">
+          <li><strong>Managed Device Detection:</strong> Calls <code>chrome.enterprise.deviceAttributes.getDirectoryDeviceId()</code>. On enrolled ChromeOS devices this returns the managed directory ID; on unmanaged devices or VMs it falls back to a persisted <code>self-generated:&lt;uuid&gt;</code>.</li>
+          <li><strong>Installed Extensions Inventory:</strong> Reads <code>chrome.management.getAll()</code> and listens to <code>onInstalled</code> / <code>onEnabled</code> / <code>onUninstalled</code>. Uploads extension IDs, names, descriptions, types, and homepage URLs via <code>SyncInstalledExtensions</code>.</li>
+          <li><strong>Active Extension Disabling:</strong> Checks installed extensions against <code>adminSettings.apps.filters</code> (and <code>apps.safeMode</code>) and disables disallowed extensions via <code>chrome.management.setEnabled(id, false)</code> when permitted.</li>
+          <li><strong>Hardware Info:</strong> Collects <code>archName</code> and <code>modelName</code> via <code>chrome.system.cpu.getInfo()</code> plus <code>capacity</code> / <code>availableCapacity</code> via <code>chrome.system.memory.getInfo()</code>.</li>
+          <li><strong>Windows Native Host:</strong> On Windows deployments, connects via <code>chrome.runtime.connectNative("chromium.goguardian.ggwindows")</code> for OS-level app window tracking.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>4. MV3 Offscreen Scraping &amp; Anti-Tamper Watchdog</h2>
+        <ul class="tight">
+          <li><strong>Display Name Scraping (<code>offscreen-document.js</code>):</strong> Because Manifest V3 service workers have no <code>DOMParser</code>, GoGuardian spins up a hidden offscreen document to parse fetched HTML from <code>accounts.google.com/AccountChooser</code> and <code>myaccount.google.com</code> (<code>.XY0ASe</code> "Welcome, &lt;Name&gt;") to resolve the student's display name (cached 24 hours).</li>
+          <li><strong>Safe Inert Parsing:</strong> <code>DOMParser.parseFromString(..., "text/html")</code> is inert (scripts do not execute), only <code>.textContent</code> is read, and all errors are caught safely—so unusual display names cannot crash or disable the extension.</li>
+          <li><strong>25-Second Health Check:</strong> Every 25 seconds (<code>[lib/content-script-health-check]</code>), the service worker pings content scripts across all open <code>http</code>, <code>https</code>, <code>about:blank</code>, and (if allowed) <code>file://</code> tabs to detect unresponsive or missing scripts.</li>
+          <li><strong>Local Persistence:</strong> Stores buffered screenshots, BSON-encoded Redux state (<code>store</code>), and entity queues in Chrome's <code>Local Extension Settings</code> LevelDB.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>MIT Licensed Documentation &bull; Contact: <a href="mailto:goguardian@mitch.pro">goguardian@mitch.pro</a></span>
+    <span id="rust-status" class="badge">Checking Rust backend...</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

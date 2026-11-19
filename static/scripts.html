@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>All 22 Content Scripts &amp; IPC Reference — GoGuardian Docs</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <div class="logo">GG</div>
+        <div>
+          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-sub">Complete Inventory of goguardian-1.js – 22.js &amp; Internal IPC</span>
+        </div>
+      </a>
+      <nav class="nav" aria-label="Documentation sections">
+        <a href="/">Overview</a>
+        <a href="/telemetry">Telemetry &amp; Device</a>
+        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
+        <a href="/filtering">Filtering &amp; Panther</a>
+        <a href="/teacher-control">Teacher Control</a>
+        <a href="/scripts">22 Scripts &amp; IPC</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Complete Reference: All 22 Content Scripts &amp; IPC Bus</h1>
+      <p>
+        Verified map of every content script bundled in GoGuardian <code>v4.1.246</code>—including
+        <code>manifest.json</code> injection settings, execution worlds (<code>ISOLATED</code> vs.
+        <code>MAIN</code>), and the dynamically injected <code>goguardian-21.js</code>.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Content Script Matrix (<code>goguardian-1.js</code> – <code>22.js</code>)</h2>
+      <div class="controls">
+        <input type="search" id="script-search" placeholder="Search scripts by filename, URL scope, or behavior (e.g. docs, youtube, blank, beforeunload)..." />
+        <button class="btn secondary active" data-world-filter="ALL">All (22)</button>
+        <button class="btn secondary" data-world-filter="ISOLATED">ISOLATED</button>
+        <button class="btn secondary" data-world-filter="MAIN">MAIN</button>
+        <button class="btn secondary" data-world-filter="DYNAMIC">DYNAMIC</button>
+      </div>
+      <table id="scripts-table">
+        <thead>
+          <tr><th>Script</th><th>Matches / Scope</th><th>Timing &amp; Frames</th><th>World</th><th>Verified Functionality</th></tr>
+        </thead>
+        <tbody>
+          <tr data-world="ISOLATED"><td><code>goguardian-1.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. ERP)</td><td><code>document_idle</code>, all_frames, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Full-page <code>innerText</code> &amp; element-count extractor (<code>MutationObserver</code> -&gt; <code>contentExtractor/newContentAvailable</code>).</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-2.js</code></td><td><code>*://docs.google.com/*</code></td><td><code>document_idle</code>, top frame</td><td><span class="badge">ISOLATED</span></td><td>Scrapes <code>#docs-title-widget</code> document title changes -&gt; <code>entitiesDocs/titleChanged</code>.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-3.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks)</td><td><code>document_idle</code>, top frame</td><td><span class="badge">ISOLATED</span></td><td>Renders the floating GoGuardian Privacy Banner React overlay when enabled.</td></tr>
+          <tr data-world="MAIN"><td><code>goguardian-4.js</code></td><td><code>*://docs.google.com/*</code></td><td><code>document_start</code>, all_frames</td><td><span class="badge amber">MAIN</span></td><td>Sets <code>_docs_force_html_by_ext</code> &amp; <code>_docs_annotate_canvas_by_ext</code> so Docs exposes SVG text annotations.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-5.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. ERP)</td><td><code>document_idle</code>, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Renders Beacon student help/support popup messages (<code>beacon/showMessage</code>).</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-6.js</code></td><td><code>https://meet.google.com/*</code></td><td><code>document_start</code>, top frame</td><td><span class="badge">ISOLATED</span></td><td>Auto-mutes Google Meet mic and camera controls (<code>[data-is-muted]</code>).</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-7.js</code></td><td><code>blocked.goguardian.com/*</code></td><td><code>document_idle</code>, all_frames</td><td><span class="badge">ISOLATED</span></td><td>Injects bypass password prompt UI into <code>.bypass-footnote</code> on block pages.</td></tr>
+          <tr data-world="MAIN"><td><code>goguardian-8.js</code></td><td><code>enroll.goguardian.com/*</code></td><td><code>document_idle</code>, top frame</td><td><span class="badge amber">MAIN</span></td><td>Sets <code>window.classtopiaCompRand = "shield-comprand"</code> for enrollment detection.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-9.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks/ERP)</td><td><code>document_idle</code>, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Mounts Teacher Announcements React overlay (<code>data-gg-announcements-mounted</code>).</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-10.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks/ERP)</td><td><code>document_start</code>, all_frames, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Subframe redirector listening for <code>redirect/redirectSubFrame</code> to update <code>window.location.href</code>.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-11.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. blocked/aleks/ERP)</td><td><code>document_idle</code>, all_frames, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Flagged Activity scanner: <code>MutationObserver</code> + 10s debounce scanning visible text, meta tags &amp; Docs labels.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-12.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks/ERP)</td><td><code>document_start</code>, all_frames, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Service-worker bridge instructing <code>goguardian-13.js</code> to clear <code>beforeunload</code> handlers.</td></tr>
+          <tr data-world="MAIN"><td><code>goguardian-13.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks/ERP)</td><td><code>document_start</code>, all_frames, about:blank</td><td><span class="badge amber">MAIN</span></td><td>Nulls <code>window.onbeforeunload</code> and blocks <code>beforeunload</code> propagation so teacher <code>closeTab</code> succeeds.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-14.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. ERP)</td><td><code>document_idle</code>, top frame, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Reports scroll offset (<code>scrollX/Y</code>), viewport size, and <code>devicePixelRatio</code> for screenshots &amp; annotations.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-15.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. ERP)</td><td><code>document_idle</code>, top frame, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Teacher Screen Annotation overlay (<code>annotateScreen/request</code>).</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-16.js</code></td><td>YouTube domains + <code>translate.googleusercontent.com</code></td><td><code>document_start</code>, all_frames</td><td><span class="badge">ISOLATED</span></td><td>YouTube isolated-world policy controller, video tracking, and metadata fetcher.</td></tr>
+          <tr data-world="MAIN"><td><code>goguardian-17.js</code></td><td>YouTube domains + <code>translate.googleusercontent.com</code></td><td><code>document_start</code>, all_frames</td><td><span class="badge amber">MAIN</span></td><td>Hooks YouTube player and hides comments, sidebar, and live chat per policy.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-18.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks/ERP)</td><td><code>document_idle</code>, all_frames, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Explicit Image Filter scanning <code>&lt;img&gt;</code>/<code>&lt;canvas&gt;</code> via TF.js MobileNet and masking/blocking matches.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-19.js</code></td><td>Gemini, NotebookLM, ChatGPT, OpenAI, Copilot, Google Search</td><td><code>document_idle</code>, top frame</td><td><span class="badge">ISOLATED</span></td><td>Beacon input hook on <code>submit</code>/<code>Enter</code>/<code>click</code> (Google Search restricted to <code>udm=50</code> AI Mode).</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-20.js</code></td><td><code>&lt;all_urls&gt;</code> (excl. aleks/ERP)</td><td><code>document_start</code>, all_frames, about:blank</td><td><span class="badge">ISOLATED</span></td><td>Iframe dimension, visibility, and title reporter (<code>siteFilter/iframeMetadata</code>).</td></tr>
+          <tr data-world="DYNAMIC"><td><code>goguardian-21.js</code></td><td>Not in manifest (injected on demand)</td><td><code>chrome.scripting.executeScript</code> (frame 0)</td><td><span class="badge red">DYNAMIC</span></td><td><code>about:blank</code> screenshotter bundling <code>html2canvas-pro</code>; skips cross-origin iframes via <code>data-html2canvas-ignore</code>.</td></tr>
+          <tr data-world="ISOLATED"><td><code>goguardian-22.js</code></td><td><code>&lt;all_urls&gt;</code></td><td><code>document_idle</code>, top frame</td><td><span class="badge">ISOLATED</span></td><td>Server-driven AI Events scraper loading selectors from <code>aiEventsSettings.adapterSettings</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="grid-2">
+      <section class="card">
+        <h2>Internal <code>chrome.runtime</code> IPC Channels</h2>
+        <p class="muted">Discovered across <code>offscreen-document.js</code> and content script bundles:</p>
+        <pre>admin/youtube/{getVideoMetadata, settingsRequest, settingsResponse, trackVideo}
+aiEvents/{getSettings, submitEvent}
+annotateScreen/request
+beacon/{showMessage, userInputText}
+before-unload/override
+bypassPassword/{passwordAttempt, passwordResult}
+call/{acceptedCall, consentDeclined, consentPending, declinedCall, declinedCallReason, error, joinPending, joined, left, permissionDeclined, permissionPending, recordingConsentChanged, recordingConsentPending}
+contentExtractor/{getContent, newContentAvailable}
+entitiesDocs/titleChanged
+explicitImageFilter/{analyzeImage, beginImageAnalysis}
+flaggedActivity/checkFlaggedTerms
+health/mainWorldScriptUnhealthy
+lib/device/self-generated-device-id
+logger/writeLog
+offscreenDocument/{parseAccountChooserPage, parseMyAccountPage}
+ports/ping
+redirect/redirectSubFrame
+screenshot/{captureAboutBlank, getCurrentWindowState}
+siteFilter/{getIframeMetadata, iframeMetadata}</pre>
+      </section>
+
+      <section class="card">
+        <h2>Disclaimer &amp; Contact</h2>
+        <p class="muted">
+          This site documents extension architecture and browser API behavior for transparency and
+          educational research. It is not affiliated with GoGuardian (Liminex, Inc.). Proprietary
+          extension files, icons, and model weights are excluded due to copyright, and all sample
+          session identifiers, accounts, and tokens have been omitted.
+        </p>
+        <p class="muted">
+          <strong>Contact:</strong> <a href="mailto:goguardian@mitch.pro">goguardian@mitch.pro</a>
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>MIT Licensed Documentation &bull; Contact: <a href="mailto:goguardian@mitch.pro">goguardian@mitch.pro</a></span>
+    <span id="rust-status" class="badge">Checking Rust backend...</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
