@@ -38,6 +38,23 @@ Read-only backend endpoints:
 - `GET /api/health` — Backend status check (`{"status":"ok","service":"goguardian-docs","backend":"rust"}`)
 - `GET /api/meta` — High-level architectural counters
 
+## Running 24/7 with systemd (User Service)
+
+To run the documentation server continuously under `~/goguardian` on port `8080`:
+
+```bash
+git clone https://github.com/urashyl/goguardian.git ~/goguardian
+cd ~/goguardian
+cargo build --release
+mkdir -p ~/.config/systemd/user
+cp goguardian-docs.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now goguardian-docs.service
+loginctl enable-linger "$USER"
+```
+
+Note: [goguardian-docs.service](goguardian-docs.service) binds `127.0.0.1:8080` by default for use behind a reverse proxy (Caddy, Nginx, or Cloudflare Tunnel). Change `Environment=HOST=127.0.0.1` to `Environment=HOST=0.0.0.0` if you want to expose port `8080` directly.
+
 ## Copyright & Research Disclaimer
 
 This repository contains **original documentation and an original Rust web server** written from static architectural analysis. **Proprietary GoGuardian source files, assets, model weights, tokens, and personal/school data are intentionally excluded** and are not redistributed due to copyright and privacy protections.

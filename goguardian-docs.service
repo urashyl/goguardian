@@ -1,0 +1,16 @@
+[Unit]
+Description=GoGuardian Explained Documentation Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/goguardian
+Environment=HOST=127.0.0.1
+Environment=PORT=8080
+ExecStart=%h/goguardian/target/release/goguardian-docs
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
