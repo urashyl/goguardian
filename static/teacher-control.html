@@ -80,48 +80,50 @@
         <code>GET https://prod-ext-gateway.goguardian.com/v1/pusher/auth</code> (passing client
         type <code>extension</code>, OS, capabilities, and <code>liveStateVersion=6</code>).
       </p>
-      <table>
-        <thead>
-          <tr><th>Channel Pattern</th><th>Subscribed Events</th><th>Behavior</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>private-account.&lt;accountId&gt;</code></td>
-            <td><code>admin-policies-updated</code></td>
-            <td>Triggers an immediate <code>/v1/policy</code> refresh rather than waiting for the 15-minute poll interval.</td>
-          </tr>
-          <tr>
-            <td><code>private-subaccount.&lt;subAccountId&gt;</code></td>
-            <td>
-              <code>client-shadow</code><br />
-              <code>client-force-live-state</code><br />
-              <code>client-request-screenshot-resolution-increase</code><br />
-              <code>client-annotate-screen-request</code>
-            </td>
-            <td>Delivers lock state, lesson plan scene changes, and <code>tabCommands</code>; forces immediate screenshot/state capture; bumps screenshot resolution; renders live teacher screen drawings.</td>
-          </tr>
-          <tr>
-            <td><code>presence-session.&lt;sessionId&gt;</code></td>
-            <td><code>SetOffTaskAlertsState</code></td>
-            <td>Toggles AI off-task scoring (<code>TeacherPredictTaskiness</code>) on or off mid-class.</td>
-          </tr>
-          <tr>
-            <td><code>presence-student.&lt;subAccountId&gt;-session.&lt;sessionId&gt;</code></td>
-            <td><code>client-chat-message</code></td>
-            <td>Streams real-time teacher/student chat messages alongside <code>GET /v1/teacher/chat</code>.</td>
-          </tr>
-          <tr>
-            <td><code>presence-call.&lt;callId&gt;</code></td>
-            <td><code>call-archived</code></td>
-            <td>Coordinates call teardown for teacher-student video calls and presentations.</td>
-          </tr>
-          <tr>
-            <td><code>private-session-instrumentation.student.&lt;id&gt;</code></td>
-            <td>—</td>
-            <td>Classroom session instrumentation channel when enabled by the session.</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Channel Pattern</th><th>Subscribed Events</th><th>Behavior</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>private-account.&lt;accountId&gt;</code></td>
+              <td><code>admin-policies-updated</code></td>
+              <td>Triggers an immediate <code>/v1/policy</code> refresh rather than waiting for the 15-minute poll interval.</td>
+            </tr>
+            <tr>
+              <td><code>private-subaccount.&lt;subAccountId&gt;</code></td>
+              <td>
+                <code>client-shadow</code><br />
+                <code>client-force-live-state</code><br />
+                <code>client-request-screenshot-resolution-increase</code><br />
+                <code>client-annotate-screen-request</code>
+              </td>
+              <td>Delivers lock state, lesson plan scene changes, and <code>tabCommands</code>; forces immediate screenshot/state capture; bumps screenshot resolution; renders live teacher screen drawings.</td>
+            </tr>
+            <tr>
+              <td><code>presence-session.&lt;sessionId&gt;</code></td>
+              <td><code>SetOffTaskAlertsState</code></td>
+              <td>Toggles AI off-task scoring (<code>TeacherPredictTaskiness</code>) on or off mid-class.</td>
+            </tr>
+            <tr>
+              <td><code>presence-student.&lt;subAccountId&gt;-session.&lt;sessionId&gt;</code></td>
+              <td><code>client-chat-message</code></td>
+              <td>Streams real-time teacher/student chat messages alongside <code>GET /v1/teacher/chat</code>.</td>
+            </tr>
+            <tr>
+              <td><code>presence-call.&lt;callId&gt;</code></td>
+              <td><code>call-archived</code></td>
+              <td>Coordinates call teardown for teacher-student video calls and presentations.</td>
+            </tr>
+            <tr>
+              <td><code>private-session-instrumentation.student.&lt;id&gt;</code></td>
+              <td>—</td>
+              <td>Classroom session instrumentation channel when enabled by the session.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="card">

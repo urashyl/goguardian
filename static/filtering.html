@@ -45,8 +45,9 @@
     <div class="callout in-plain-english simple-only">
       <div>
         <strong>In plain English:</strong> Every website you visit is checked against school blocklists,
-        Google Translate proxy links are automatically unwrapped, and unless your district turns on
-        school-hours scheduling, monitoring and filtering stay on 24/7 at home.
+        Google Translate proxy links are automatically unwrapped, and at-home monitoring stays
+        <strong>ON 24/7</strong> unless your district explicitly enables school-hours restrictions
+        (in the analyzed real-world config, those restrictions were disabled, leaving at-home tracking ON).
       </div>
       <button type="button" class="btn secondary" data-enable-advanced>Show Advanced Details</button>
     </div>
@@ -59,33 +60,35 @@
         <code>object</code> requests across four sequential rule engines, plus <code>tabs.onCreated</code>
         and <code>tabs.onUpdated</code> listeners for non-network tabs or dynamic policy changes:
       </p>
-      <table>
-        <thead>
-          <tr><th>Layer</th><th>Scope</th><th>Mechanism</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>1. Admin Site Filter</strong></td>
-            <td><code>main_frame</code>, <code>object</code>, and optionally <code>sub_frame</code></td>
-            <td>Evaluates explicit site allow/block patterns, Panther site categories, <code>safeMode</code>, <code>blockDirectIp</code>, parent site filters/pauses, and active bypasses. Note: <code>sub_frame</code> filtering is skipped unless <code>blockSubFrames</code> is <code>true</code> (and skipped under <code>safeMode</code>).</td>
-          </tr>
-          <tr>
-            <td><strong>2. Admin Block Consumer Accounts</strong></td>
-            <td><code>accounts.google.com</code>, <code>accounts.youtube.com</code></td>
-            <td>Blocks configured consumer sign-in/sign-out paths (e.g., <code>AddSession</code>, <code>Logout</code>, <code>accounts/Logout2</code>) to prevent switching away from managed accounts.</td>
-          </tr>
-          <tr>
-            <td><strong>3. Teacher Scene</strong></td>
-            <td><code>main_frame</code> &amp; <code>object</code> only</td>
-            <td>Enforces active teacher Lesson Plan allowlists or blocklists fetched from <code>GET /v1/teacher/lesson-plans</code>.</td>
-          </tr>
-          <tr>
-            <td><strong>4. Admin Safe Search</strong></td>
-            <td>Supported search engines</td>
-            <td>Rewrites search URLs via <code>redirectUrl</code> to enforce SafeSearch parameters when <code>safeSearchEnabled</code> is active.</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Layer</th><th>Scope</th><th>Mechanism</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Admin Site Filter</strong></td>
+              <td><code>main_frame</code>, <code>object</code>, and optionally <code>sub_frame</code></td>
+              <td>Evaluates explicit site allow/block patterns, Panther site categories, <code>safeMode</code>, <code>blockDirectIp</code>, parent site filters/pauses, and active bypasses. Note: <code>sub_frame</code> filtering is skipped unless <code>blockSubFrames</code> is <code>true</code> (and skipped under <code>safeMode</code>).</td>
+            </tr>
+            <tr>
+              <td><strong>2. Admin Block Consumer Accounts</strong></td>
+              <td><code>accounts.google.com</code>, <code>accounts.youtube.com</code></td>
+              <td>Blocks configured consumer sign-in/sign-out paths (e.g., <code>AddSession</code>, <code>Logout</code>, <code>accounts/Logout2</code>) to prevent switching away from managed accounts.</td>
+            </tr>
+            <tr>
+              <td><strong>3. Teacher Scene</strong></td>
+              <td><code>main_frame</code> &amp; <code>object</code> only</td>
+              <td>Enforces active teacher Lesson Plan allowlists or blocklists fetched from <code>GET /v1/teacher/lesson-plans</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>4. Admin Safe Search</strong></td>
+              <td>Supported search engines</td>
+              <td>Rewrites search URLs via <code>redirectUrl</code> to enforce SafeSearch parameters when <code>safeSearchEnabled</code> is active.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <div class="grid-2">
@@ -153,15 +156,18 @@
     </section>
 
     <section class="card">
-      <h2>5. Out-of-School Scheduling &amp; Managed-Only Switches</h2>
+      <h2>5. Out-of-School Scheduling &amp; Managed-Only Restrictions</h2>
       <p class="muted" style="margin:0;">
-        Both <code>privacySettings</code> and <code>adminSettings.orgSettings</code> include a
+        Rather than turning home tracking on as an opt-in toggle, the
         <code>scheduling</code> object (<code>enabled</code>, <code>monitorAtSchoolOnly</code>,
         <code>filterAtSchoolOnly</code>, <code>ipRanges</code>, and <code>utcDayIntervals</code>)
-        alongside <code>onlyMonitorManagedDevices</code> and <code>onlyFilterManagedDevices</code>.
-        When scheduling and managed-only restrictions are set to <code>false</code>, monitoring and
-        filtering stay active 24/7 regardless of network location, time of day, or whether the Chrome
-        profile is on a school-managed Chromebook or an unmanaged device.
+        and the managed-device flags (<code>onlyMonitorManagedDevices</code>,
+        <code>onlyFilterManagedDevices</code>) in <code>privacySettings</code> and
+        <code>adminSettings.orgSettings</code> act as <em>opt-in restrictions</em> that limit
+        otherwise 24/7 monitoring. In the real-world policy inspected for this research, all of those
+        restriction flags were set to <code>false</code>—leaving monitoring and filtering
+        <strong>ON 24/7</strong> at home, on weekends, and on unmanaged devices signed into the
+        school Chrome profile.
       </p>
     </section>
   </main>

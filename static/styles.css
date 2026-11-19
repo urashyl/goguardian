@@ -484,10 +484,16 @@ ul.tight li {
   margin-bottom: 0.38rem;
 }
 
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.86rem;
+  font-size: 0.85rem;
 }
 
 th,
@@ -496,6 +502,49 @@ td {
   padding: 0.62rem 0.7rem;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
+  overflow-wrap: break-word;
+}
+
+td code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#scripts-table {
+  table-layout: fixed;
+  min-width: 720px;
+}
+
+#scripts-table th:nth-child(1),
+#scripts-table td:nth-child(1) {
+  width: 16%;
+}
+
+#scripts-table td:nth-child(1) code {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+#scripts-table th:nth-child(2),
+#scripts-table td:nth-child(2) {
+  width: 22%;
+}
+
+#scripts-table th:nth-child(3),
+#scripts-table td:nth-child(3) {
+  width: 17%;
+}
+
+#scripts-table th:nth-child(4),
+#scripts-table td:nth-child(4) {
+  width: 11%;
+  white-space: nowrap;
+}
+
+#scripts-table th:nth-child(5),
+#scripts-table td:nth-child(5) {
+  width: 34%;
 }
 
 thead th {

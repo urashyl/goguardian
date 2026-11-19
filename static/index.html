@@ -52,7 +52,7 @@
         </div>
         <div class="stat">
           <div class="num">24 / 7</div>
-          <div class="lbl">Can keep running at home &amp; weekends if scheduling is off</div>
+          <div class="lbl">At-home &amp; weekend monitoring stays ON unless restricted (ON in tested config)</div>
         </div>
         <div class="stat">
           <div class="num">7 AI Tools</div>
@@ -98,12 +98,14 @@
         </article>
 
         <article class="parent-item">
-          <h3>2. Tracking does not automatically stop at home</h3>
+          <h3>2. At-home &amp; weekend tracking is ON unless a school restricts it</h3>
           <p>
-            GoGuardian has optional school-hours and school-Wi-Fi scheduling settings. However, if a
-            district leaves those switches turned off, monitoring and periodic screenshots continue
-            at home, at night, and on weekends—including on personal computers signed into the
-            school Chrome profile when device restrictions are disabled.
+            At-home monitoring is not an opt-in feature that starts turned off—it is the opposite.
+            GoGuardian runs <strong>24/7 at home, at night, and on weekends</strong> unless a
+            district explicitly enables school-hours or school-Wi-Fi restrictions. In the real-world
+            policy inspected for this research, those restrictions were turned <strong>off</strong>,
+            meaning 24/7 at-home monitoring was <strong>active</strong>—even on unmanaged or
+            personal computers signed into the school Chrome profile.
           </p>
           <p class="tech-note advanced-only">
             Controlled by <code>privacySettings.scheduling</code>,
@@ -239,23 +241,25 @@
         categorization, and ML inference across ten dedicated GoGuardian domains (most sending
         gzip-compressed JSON bodies):
       </p>
-      <table>
-        <thead>
-          <tr><th>Client Name</th><th>Host</th><th>Primary Responsibility</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><code>ExtensionGateway</code></td><td><code>prod-ext-gateway.goguardian.com</code></td><td>Auth/session refresh, <code>/v1/policy</code>, feature flags, Pusher auth, bypass passwords, video metadata, extension sync, lesson plans, off-task ML, check-ins, explicit image model manifest</td></tr>
-          <tr><td><code>Zephyr</code></td><td><code>prod-zephyr.goguardian.com</code></td><td>Core browsing telemetry ingestion (<code>POST /v1/entities</code>) — tabs, titles, iframes, Docs titles, flagged terms</td></tr>
-          <tr><td><code>Panther</code></td><td><code>panther.goguardian.com</code></td><td>Real-time URL categorization (<code>POST /api/v2/categories</code>)</td></tr>
-          <tr><td><code>ExtScreenshots</code></td><td><code>screenshots.goguardian.com</code></td><td>Periodic activity snapshots &amp; teacher live-mode screenshots</td></tr>
-          <tr><td><code>Inquisition</code></td><td><code>inquisition.goguardian.com</code></td><td>Active classroom session polling (<code>GET /v3/ext/livemode</code> every 15s)</td></tr>
-          <tr><td><code>AIEventsIntakeService</code></td><td><code>ai-events-intake.goguardian.com</code></td><td>AI chatbot prompt/turn capture ingestion (<code>POST /v1/submit</code>)</td></tr>
-          <tr><td><code>BeaconGoFullpagePredictor</code></td><td><code>beacon-fullpage-predictor.goguardian.com</code></td><td>Full-page &amp; search/AI input analysis for student safety alerts</td></tr>
-          <tr><td><code>GoX3Predictor</code></td><td><code>prod-go-x3-predictor.goguardian.com</code></td><td>Smart Alerts page content classification (explicit, proxy, game)</td></tr>
-          <tr><td><code>CountVonCount</code></td><td><code>countvoncount.goguardian.com</code></td><td>Extension structured logs and operational metrics</td></tr>
-          <tr><td><code>Whiteboard</code></td><td><code>whiteboard.goguardian.com</code></td><td>Teacher whiteboard / checkup support service</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Client Name</th><th>Host</th><th>Primary Responsibility</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>ExtensionGateway</code></td><td><code>prod-ext-gateway.goguardian.com</code></td><td>Auth/session refresh, <code>/v1/policy</code>, feature flags, Pusher auth, bypass passwords, video metadata, extension sync, lesson plans, off-task ML, check-ins, explicit image model manifest</td></tr>
+            <tr><td><code>Zephyr</code></td><td><code>prod-zephyr.goguardian.com</code></td><td>Core browsing telemetry ingestion (<code>POST /v1/entities</code>) — tabs, titles, iframes, Docs titles, flagged terms</td></tr>
+            <tr><td><code>Panther</code></td><td><code>panther.goguardian.com</code></td><td>Real-time URL categorization (<code>POST /api/v2/categories</code>)</td></tr>
+            <tr><td><code>ExtScreenshots</code></td><td><code>screenshots.goguardian.com</code></td><td>Periodic activity snapshots &amp; teacher live-mode screenshots</td></tr>
+            <tr><td><code>Inquisition</code></td><td><code>inquisition.goguardian.com</code></td><td>Active classroom session polling (<code>GET /v3/ext/livemode</code> every 15s)</td></tr>
+            <tr><td><code>AIEventsIntakeService</code></td><td><code>ai-events-intake.goguardian.com</code></td><td>AI chatbot prompt/turn capture ingestion (<code>POST /v1/submit</code>)</td></tr>
+            <tr><td><code>BeaconGoFullpagePredictor</code></td><td><code>beacon-fullpage-predictor.goguardian.com</code></td><td>Full-page &amp; search/AI input analysis for student safety alerts</td></tr>
+            <tr><td><code>GoX3Predictor</code></td><td><code>prod-go-x3-predictor.goguardian.com</code></td><td>Smart Alerts page content classification (explicit, proxy, game)</td></tr>
+            <tr><td><code>CountVonCount</code></td><td><code>countvoncount.goguardian.com</code></td><td>Extension structured logs and operational metrics</td></tr>
+            <tr><td><code>Whiteboard</code></td><td><code>whiteboard.goguardian.com</code></td><td>Teacher whiteboard / checkup support service</td></tr>
+          </tbody>
+        </table>
+      </div>
       <p class="muted" style="margin-top:0.75rem;">
         Additional auxiliary hosts: <code>checkup.goguardian.com</code> (diagnostics),
         <code>https://extension.goguardian/ping</code> (on-prem/proxy reachability check),
