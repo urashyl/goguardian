@@ -11,18 +11,25 @@
     <div class="topbar-inner">
       <a class="brand" href="/">
         <div>
-          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-title">GoGuardian Explained</span>
           <span class="brand-sub">Inquisition Polling, Pusher Commands, LiveState v6 &amp; Twilio WebRTC</span>
         </div>
       </a>
-      <nav class="nav" aria-label="Documentation sections">
-        <a href="/">Overview</a>
-        <a href="/telemetry">Telemetry &amp; Device</a>
-        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
-        <a href="/filtering">Filtering &amp; Panther</a>
-        <a href="/teacher-control">Teacher Control</a>
-        <a href="/scripts">22 Scripts &amp; IPC</a>
-      </nav>
+      <div class="topbar-right">
+        <nav class="nav" aria-label="Documentation sections">
+          <a href="/">Overview</a>
+          <a href="/telemetry">Screens &amp; Privacy</a>
+          <a href="/ai-and-docs">AI &amp; Docs</a>
+          <a href="/filtering">Filtering</a>
+          <a href="/teacher-control">Teacher Control</a>
+          <a href="/methodology">How We Know</a>
+          <a href="/scripts">22 Scripts</a>
+        </nav>
+        <div class="mode-switch" role="group" aria-label="Reading mode">
+          <button type="button" data-mode="simple" class="active" aria-pressed="true">Simple</button>
+          <button type="button" data-mode="advanced" aria-pressed="false">Advanced</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -34,6 +41,15 @@
         3 seconds, and pushes remote browser commands in real time.
       </p>
     </section>
+
+    <div class="callout in-plain-english simple-only">
+      <div>
+        <strong>In plain English:</strong> During a live class session, teachers receive a stream
+        of student screens every 3 seconds and can lock browsers, open or close tabs, mute Google
+        Meet, send messages, or draw annotations directly over the screen.
+      </div>
+      <button type="button" class="btn secondary" data-enable-advanced>Show Advanced Details</button>
+    </div>
 
     <div class="grid-2">
       <section class="card">
@@ -57,7 +73,7 @@
       </section>
     </div>
 
-    <section class="card">
+    <section class="card advanced-only">
       <h2>3. Pusher Real-Time Channel &amp; Event Matrix <span class="badge green">Cluster: goguardian</span></h2>
       <p class="muted">
         Authentication for private/presence Pusher channels is signed by
@@ -111,11 +127,12 @@
     <section class="card">
       <h2>4. Twilio WebRTC Video Calls &amp; Screen Presentations</h2>
       <p class="muted" style="margin:0;">
-        Teacher video calls (<code>video-call.js</code> / <code>video-call-ui.html</code>) and
-        teacher screen presentations (<code>presentation.js</code> / <code>teacher-presentation.html</code>)
-        connect over Twilio's WebRTC signaling gateway (<code>wss://sdkgw.&lt;region&gt;.twilio.com</code>).
-        The extension enforces explicit call-consent and recording-consent state machines via IPC
-        (<code>call/consentPending</code>, <code>call/recordingConsentChanged</code>) and can share
+        Teacher video calls and screen presentations use live WebRTC media channels<span class="advanced-only"> via
+        <code>video-call.js</code> / <code>video-call-ui.html</code> and <code>presentation.js</code>
+        / <code>teacher-presentation.html</code> over Twilio's signaling gateway
+        (<code>wss://sdkgw.&lt;region&gt;.twilio.com</code>)</span>.
+        The extension enforces explicit call-consent and recording-consent prompts<span class="advanced-only"> via IPC
+        (<code>call/consentPending</code>, <code>call/recordingConsentChanged</code>)</span> and can share
         the screen directly via <code>navigator.mediaDevices.getDisplayMedia()</code>.
       </p>
     </section>

@@ -1,15 +1,21 @@
 # GoGuardian MV3 Technical Documentation (`goguardian-docs`)
 
-Independent, public-interest technical documentation explaining what the GoGuardian Chrome Manifest V3 extension (`v4.1.246`) monitors, filters, and controls inside a managed browser session, served by a minimal zero-dependency Rust HTTP/1.1 backend.
+Independent, public-interest documentation explaining what the GoGuardian Chrome Manifest V3 extension (`v4.1.246`) monitors, filters, and controls inside a managed browser session. Includes a plain-English **Simple** view for parents and students plus a toggleable **Advanced** view with technical details, served by a minimal zero-dependency Rust HTTP/1.1 backend.
 
 ## Pages Included
 
-- **`/`** — **Overview & Architecture**: Extension permissions, 10 backend microservices, Pusher/Twilio control plane summary, and key takeaways.
-- **`/telemetry`** — **Browsing, Screenshots, `about:blank` & Device Profiling**: `Zephyr` entity flushing, `captureVisibleTab`, `goguardian-21.js` (`html2canvas-pro`) vs. cross-origin iframes, `submitAboutBlankIframes` (`getAllFrames`), hardware/extension/device-ID profiling, Windows native host, `offscreen-document.js` account scraping, and the 25-second health check.
+- **`/`** — **Overview**: Plain-English parent takeaways (3-second live capture, 24/7 off-campus scheduling, browser webcam preview screenshots, Google Docs & AI reading, myth checks, questions for school districts) plus Advanced Manifest V3 permissions & 10-microservice topology.
+- **`/telemetry`** — **Screens, Webcams & Privacy**: `Zephyr` entity flushing, `captureVisibleTab`, webcam preview screenshots vs. `chrome://camera-app`, background-tab focus-switching, `goguardian-21.js` (`html2canvas-pro`) vs. cross-origin iframes, `submitAboutBlankIframes` (`getAllFrames`), hardware/extension/device-ID profiling, Windows native host, `offscreen-document.js` account scraping, and the 25-second health check.
 - **`/ai-and-docs`** — **AI Chatbots, Google Docs, YouTube & ML Classifiers**: Dual AI prompt capture (`19.js` + server-pushed `22.js` adapters), Google Docs `_docs_force_html_by_ext` canvas unwrapping, YouTube player hooks, Flagged Terms, Beacon, TF.js Explicit Image Filter, Teacher Off-Task ML (`TeacherPredictTaskiness`), and password/input capture limits.
 - **`/filtering`** — **URL Filtering, Panther & SafeTranslate**: 4-layer `webRequest.onBeforeRequest` rules, `sub_frame` handling, Panther categorization, bypass passwords, interactive `*.translate.goog` SafeTranslate decoder, and `/v1/policy` structure.
 - **`/teacher-control`** — **Teacher Live Control Plane**: `Inquisition` session polling, Pusher channel/event matrix, `LiveState v6`, Screen Lock, `beforeunload` override, Google Meet auto-mute, live screen annotations, announcements, check-ins, and Twilio WebRTC calls/presentations.
+- **`/methodology`** — **How This Information Was Obtained**: Plain-English overview and sanitized 6-stage offline ChromeOS Flex forensic pipeline (user-space `debugfs` `ext4` extraction, `password.gaia` vs. TPM, Cryptohome `scrypt` + `HKDF-SHA256` + `AES-256-GCM` `USS` unwrapping, FlatBuffer `fscrypt` v2 verification, offline `AES-256-CTS`/`AES-256-XTS` decryption, LevelDB & extension audit).
 - **`/scripts`** — **Content Scripts & IPC Reference**: Searchable/filterable reference table for all 22 content scripts (`goguardian-1.js`–`22.js`) and the internal `chrome.runtime` IPC message bus.
+
+## Reading Modes & Deployment
+
+- **Simple / Advanced Toggle**: Pages default to a plain-English **Simple** view and persist the user's choice (`Simple` vs. `Advanced`) via `localStorage` or `?mode=advanced` / `?mode=simple`.
+- **Static Hosting**: The files in `static/` are completely self-contained and can also be deployed directly on static hosts (Cloudflare Pages, Netlify, GitHub Pages, or a custom domain) if you don't need the Rust server routes (`/api/health`, `/api/meta`, extensionless URL mapping).
 
 ## Running Locally
 

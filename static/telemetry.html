@@ -11,18 +11,25 @@
     <div class="topbar-inner">
       <a class="brand" href="/">
         <div>
-          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-title">GoGuardian Explained</span>
           <span class="brand-sub">Telemetry, Screenshots, about:blank &amp; Device Profiling</span>
         </div>
       </a>
-      <nav class="nav" aria-label="Documentation sections">
-        <a href="/">Overview</a>
-        <a href="/telemetry">Telemetry &amp; Device</a>
-        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
-        <a href="/filtering">Filtering &amp; Panther</a>
-        <a href="/teacher-control">Teacher Control</a>
-        <a href="/scripts">22 Scripts &amp; IPC</a>
-      </nav>
+      <div class="topbar-right">
+        <nav class="nav" aria-label="Documentation sections">
+          <a href="/">Overview</a>
+          <a href="/telemetry">Screens &amp; Privacy</a>
+          <a href="/ai-and-docs">AI &amp; Docs</a>
+          <a href="/filtering">Filtering</a>
+          <a href="/teacher-control">Teacher Control</a>
+          <a href="/methodology">How We Know</a>
+          <a href="/scripts">22 Scripts</a>
+        </nav>
+        <div class="mode-switch" role="group" aria-label="Reading mode">
+          <button type="button" data-mode="simple" class="active" aria-pressed="true">Simple</button>
+          <button type="button" data-mode="advanced" aria-pressed="false">Advanced</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -34,6 +41,15 @@
         installed extensions, and even user display names inside Manifest V3.
       </p>
     </section>
+
+    <div class="callout in-plain-english simple-only">
+      <div>
+        <strong>In plain English:</strong> Every tab you open, screenshots of the active browser
+        tab (including browser-based webcam previews), websites embedded inside
+        <code>about:blank</code> tabs, and your installed Chrome extensions are logged and synced.
+      </div>
+      <button type="button" class="btn secondary" data-enable-advanced>Show Advanced Details</button>
+    </div>
 
     <section class="card">
       <h2>1. Tab &amp; Browsing Activity (<code>Zephyr /v1/entities</code>) <span class="badge blue">60s / 1s flush</span></h2>
@@ -58,7 +74,7 @@
         (<code>[lib/screenshot]</code>), which branches depending on whether the active tab URL starts
         with <code>about:blank</code>:
       </p>
-      <pre>activeTab = chrome.tabs.query({ active: true, windowId })
+      <pre class="advanced-only">activeTab = chrome.tabs.query({ active: true, windowId })
 if (!url.startsWith("about:blank")):
     capture via chrome.tabs.captureVisibleTab(windowId, { format: "jpeg"|"webp", quality })
 else:

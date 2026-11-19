@@ -11,18 +11,25 @@
     <div class="topbar-inner">
       <a class="brand" href="/">
         <div>
-          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-title">GoGuardian Explained</span>
           <span class="brand-sub">AI Prompt Capture, Google Docs, YouTube &amp; ML Models</span>
         </div>
       </a>
-      <nav class="nav" aria-label="Documentation sections">
-        <a href="/">Overview</a>
-        <a href="/telemetry">Telemetry &amp; Device</a>
-        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
-        <a href="/filtering">Filtering &amp; Panther</a>
-        <a href="/teacher-control">Teacher Control</a>
-        <a href="/scripts">22 Scripts &amp; IPC</a>
-      </nav>
+      <div class="topbar-right">
+        <nav class="nav" aria-label="Documentation sections">
+          <a href="/">Overview</a>
+          <a href="/telemetry">Screens &amp; Privacy</a>
+          <a href="/ai-and-docs">AI &amp; Docs</a>
+          <a href="/filtering">Filtering</a>
+          <a href="/teacher-control">Teacher Control</a>
+          <a href="/methodology">How We Know</a>
+          <a href="/scripts">22 Scripts</a>
+        </nav>
+        <div class="mode-switch" role="group" aria-label="Reading mode">
+          <button type="button" data-mode="simple" class="active" aria-pressed="true">Simple</button>
+          <button type="button" data-mode="advanced" aria-pressed="false">Advanced</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -35,6 +42,15 @@
         cloud machine-learning models.
       </p>
     </section>
+
+    <div class="callout in-plain-english simple-only">
+      <div>
+        <strong>In plain English:</strong> GoGuardian reads prompts typed into AI tools (ChatGPT,
+        Gemini, Claude, Copilot, NotebookLM), forces Google Docs to expose document drafts for
+        scanning, checks YouTube videos, and uses AI to score whether reading material is "off-task."
+      </div>
+      <button type="button" class="btn secondary" data-enable-advanced>Show Advanced Details</button>
+    </div>
 
     <section class="card">
       <h2>1. Dual AI Chatbot &amp; Search Prompt Capture <span class="badge amber">19.js + 22.js</span></h2>
@@ -71,8 +87,8 @@
           standard DOM scraping cannot read document body text by default.
         </p>
         <ul class="tight">
-          <li><strong><code>goguardian-4.js</code> (<code>MAIN</code> world, <code>document_start</code>):</strong> Sets Google's internal extension integration flags on <code>window</code>:
-            <pre>window._docs_force_html_by_ext = "&lt;extension-id&gt;";
+          <li><strong><code>goguardian-4.js</code> (<code>MAIN</code> world, <code>document_start</code>):</strong> Sets Google's internal extension integration flags on <code>window</code><span class="advanced-only">:</span>
+            <pre class="advanced-only">window._docs_force_html_by_ext = "&lt;extension-id&gt;";
 window._docs_annotate_canvas_by_ext = "&lt;extension-id&gt;";</pre>
           </li>
           <li><strong>Effect:</strong> Instructs Google Docs to render accessible SVG <code>rect[aria-label]</code> annotations mirroring document text.</li>

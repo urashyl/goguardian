@@ -11,6 +11,58 @@
     }
   });
 
+  // Simple / Advanced reading mode controller
+  const modeStorageKey = "gg-docs-mode";
+  const modeButtons = document.querySelectorAll("[data-mode]");
+  const modeHint = document.getElementById("mode-hint");
+
+  function setMode(mode) {
+    const isAdvanced = mode === "advanced";
+    document.body.classList.toggle("mode-advanced", isAdvanced);
+    try {
+      localStorage.setItem(modeStorageKey, isAdvanced ? "advanced" : "simple");
+    } catch {
+      // Ignore storage failures in restricted contexts
+    }
+    modeButtons.forEach((btn) => {
+      const active = btn.dataset.mode === (isAdvanced ? "advanced" : "simple");
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    if (modeHint) {
+      modeHint.textContent = isAdvanced
+        ? "Advanced view active: showing API endpoints, manifest permissions, scripts, and forensic protocols."
+        : "Simple view active: plain-English summary for parents and students. Switch to Advanced for code-level proof.";
+    }
+  }
+
+  let initialMode = "simple";
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const urlMode = params.get("mode");
+    const savedMode = localStorage.getItem(modeStorageKey);
+    if (urlMode === "advanced" || urlMode === "simple") {
+      initialMode = urlMode;
+    } else if (savedMode === "advanced" || savedMode === "simple") {
+      initialMode = savedMode;
+    }
+  } catch {
+    // Ignore URL/storage read failures
+  }
+  setMode(initialMode);
+
+  modeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setMode(btn.dataset.mode === "advanced" ? "advanced" : "simple");
+    });
+  });
+
+  document.querySelectorAll("[data-enable-advanced]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setMode("advanced");
+    });
+  });
+
   // Ping Rust backend health endpoint
   const statusEl = document.getElementById("rust-status");
   if (statusEl) {

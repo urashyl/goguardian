@@ -32,6 +32,7 @@ fn resolve_route(raw_target: &str) -> Route {
         "/teacher-control" | "/teacher-control.html" => {
             Route::StaticFile("teacher-control.html".to_string())
         }
+        "/methodology" | "/methodology.html" => Route::StaticFile("methodology.html".to_string()),
         "/scripts" | "/scripts.html" => Route::StaticFile("scripts.html".to_string()),
         other => {
             let trimmed = other.trim_start_matches('/');
@@ -283,6 +284,10 @@ mod tests {
             Route::StaticFile("teacher-control.html".into())
         );
         assert_eq!(
+            resolve_route("/methodology"),
+            Route::StaticFile("methodology.html".into())
+        );
+        assert_eq!(
             resolve_route("/scripts"),
             Route::StaticFile("scripts.html".into())
         );
@@ -305,6 +310,10 @@ mod tests {
         assert_eq!(
             resolve_route("/teacher-control/"),
             Route::StaticFile("teacher-control.html".into())
+        );
+        assert_eq!(
+            resolve_route("/methodology/"),
+            Route::StaticFile("methodology.html".into())
         );
         assert_eq!(
             resolve_route("/scripts/"),

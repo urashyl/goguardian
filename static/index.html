@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GoGuardian MV3 Technical Documentation — Overview</title>
+  <title>GoGuardian Explained — What School Chromebooks Track</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -11,31 +11,60 @@
     <div class="topbar-inner">
       <a class="brand" href="/">
         <div>
-          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
-          <span class="brand-sub">Technical analysis of Extension v4.1.246 telemetry &amp; control</span>
+          <span class="brand-title">GoGuardian Explained</span>
+          <span class="brand-sub">What school browser monitoring sees and controls</span>
         </div>
       </a>
-      <nav class="nav" aria-label="Documentation sections">
-        <a href="/">Overview</a>
-        <a href="/telemetry">Telemetry &amp; Device</a>
-        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
-        <a href="/filtering">Filtering &amp; Panther</a>
-        <a href="/teacher-control">Teacher Control</a>
-        <a href="/scripts">22 Scripts &amp; IPC</a>
-      </nav>
+      <div class="topbar-right">
+        <nav class="nav" aria-label="Documentation sections">
+          <a href="/">Overview</a>
+          <a href="/telemetry">Screens &amp; Privacy</a>
+          <a href="/ai-and-docs">AI &amp; Docs</a>
+          <a href="/filtering">Filtering</a>
+          <a href="/teacher-control">Teacher Control</a>
+          <a href="/methodology">How We Know</a>
+          <a href="/scripts">22 Scripts</a>
+        </nav>
+        <div class="mode-switch" role="group" aria-label="Reading mode">
+          <button type="button" data-mode="simple" class="active" aria-pressed="true">Simple</button>
+          <button type="button" data-mode="advanced" aria-pressed="false">Advanced</button>
+        </div>
+      </div>
     </div>
   </header>
 
   <main class="container">
     <section class="hero">
-      <h1>What GoGuardian Tracks &amp; Controls in the Browser</h1>
+      <h1>What GoGuardian Tracks on School Chromebooks</h1>
       <p>
-        Independent technical documentation of the GoGuardian Chrome Manifest V3 extension
-        (<code>v4.1.246</code>), compiled from static inspection of its manifest, service worker,
-        offscreen document, and 22 content scripts. This guide explains the exact browser APIs,
-        network microservices, real-time channels, and on-device models involved.
+        GoGuardian is a monitoring and filtering extension installed on millions of school-issued
+        Chromebooks and student Chrome profiles. This independent guide explains in plain English
+        what it actually watches, what teachers can do remotely, and what myths are false.
       </p>
-      <div class="stats">
+      <p id="mode-hint" class="muted" style="margin-top:0.55rem;font-size:0.86rem;">
+        Simple view active: plain-English summary for parents and students. Switch to Advanced for code-level proof.
+      </p>
+
+      <div class="stats simple-only">
+        <div class="stat">
+          <div class="num">Every 3s</div>
+          <div class="lbl">Live screen capture during active teacher sessions</div>
+        </div>
+        <div class="stat">
+          <div class="num">24 / 7</div>
+          <div class="lbl">Can keep running at home &amp; weekends if scheduling is off</div>
+        </div>
+        <div class="stat">
+          <div class="num">7 AI Tools</div>
+          <div class="lbl">Prompts captured on ChatGPT, Gemini, Claude &amp; more</div>
+        </div>
+        <div class="stat">
+          <div class="num">Every Doc</div>
+          <div class="lbl">Forces Google Docs to expose draft text for scanning</div>
+        </div>
+      </div>
+
+      <div class="stats advanced-only">
         <div class="stat"><div class="num">22</div><div class="lbl">Content Scripts (<code>1.js</code>–<code>22.js</code>)</div></div>
         <div class="stat"><div class="num">10</div><div class="lbl">Backend Microservices</div></div>
         <div class="stat"><div class="num">7</div><div class="lbl">AI Chatbot Adapters</div></div>
@@ -43,14 +72,137 @@
       </div>
     </section>
 
+    <section class="card">
+      <h2>What Parents &amp; Students Should Know First</h2>
+      <p class="muted">
+        Most families assume school software just blocks bad websites. Static inspection of the
+        GoGuardian extension (<code>v4.1.246</code>) shows it does significantly more:
+      </p>
+
+      <div class="plain-list">
+        <article class="parent-item">
+          <h3>1. Your child's screen can be captured every 3 seconds</h3>
+          <p>
+            Whenever a teacher session is active, GoGuardian streams screenshots of the browser
+            every 3 seconds along with every open tab, page title, and how many milliseconds the
+            student has been idle. Teachers can also request higher-resolution screenshots, lock the
+            screen, close tabs (bypassing "unsaved changes" warnings), mute Google Meet, or draw
+            directly over the screen.
+          </p>
+          <p class="tech-note advanced-only">
+            Verified via <code>LiveState v6</code> (<code>LIVE_STATE_INTERVAL_MS = 3000</code>),
+            <code>ExtScreenshots</code>, Pusher <code>client-shadow</code> /
+            <code>client-annotate-screen-request</code>, and <code>goguardian-13.js</code>
+            clearing <code>window.onbeforeunload</code>.
+          </p>
+        </article>
+
+        <article class="parent-item">
+          <h3>2. Tracking does not automatically stop at home</h3>
+          <p>
+            GoGuardian has optional school-hours and school-Wi-Fi scheduling settings. However, if a
+            district leaves those switches turned off, monitoring and periodic screenshots continue
+            at home, at night, and on weekends—including on personal computers signed into the
+            school Chrome profile when device restrictions are disabled.
+          </p>
+          <p class="tech-note advanced-only">
+            Controlled by <code>privacySettings.scheduling</code>,
+            <code>monitorAtSchoolOnly</code>, <code>filterAtSchoolOnly</code>, and
+            <code>onlyMonitorManagedDevices</code> in <code>GET /v1/policy</code>.
+          </p>
+        </article>
+
+        <article class="parent-item">
+          <h3>3. Camera previews in a browser tab appear in screenshots</h3>
+          <p>
+            GoGuardian does <strong>not</strong> secretly turn on a laptop's webcam on its own, and
+            Chrome blocks extensions from screenshotting the built-in Chromebook Camera app.
+            However, if a student looks at themselves in any normal webpage (such as a Google Meet
+            or Zoom preview, or a webcam website), live and periodic screenshots <strong>will
+            capture their face and room</strong>.
+          </p>
+          <p class="tech-note advanced-only">
+            <code>background.js</code> contains zero <code>getUserMedia</code> calls (webcam APIs
+            exist only in WebRTC call pages); <code>chrome.tabs.captureVisibleTab()</code> captures
+            rendered <code>http(s)://</code> pixels while failing on <code>chrome://</code> URLs.
+          </p>
+        </article>
+
+        <article class="parent-item">
+          <h3>4. Google Docs drafts and AI chatbot prompts are read</h3>
+          <p>
+            Even though Google Docs draws documents onto a canvas for performance, GoGuardian injects
+            code that forces Google Docs to expose hidden text so drafts and titles can be scanned.
+            It also captures prompts typed into ChatGPT, Google Gemini, Claude, Microsoft Copilot,
+            NotebookLM, and Google AI Mode.
+          </p>
+          <p class="tech-note advanced-only">
+            <code>goguardian-4.js</code> sets <code>_docs_force_html_by_ext</code>;
+            <code>19.js</code> and server-pushed selectors in <code>22.js</code> forward AI prompts
+            to <code>ai-events-intake.goguardian.com/v1/submit</code> and Beacon.
+          </p>
+        </article>
+
+        <article class="parent-item">
+          <h3>5. Automated AI scores "off-task" reading &amp; scans images</h3>
+          <p>
+            During class, the full visible text of whatever article or page the student is reading
+            can be sent to an AI off-task scorer, while an on-device AI model scans images on
+            webpages. If a Smart Alert triggers on a background tab, GoGuardian can briefly switch
+            focus to that tab, snap a screenshot, and switch back.
+          </p>
+          <p class="tech-note advanced-only">
+            Uses <code>POST /v1/teacher/taskiness/predict</code>, an 8-shard TF.js MobileNet model
+            in <code>goguardian-18.js</code>, and <code>chrome.tabs.update(..., { active: true })</code>
+            inside <code>[lib/screenshot]</code>.
+          </p>
+        </article>
+
+        <article class="parent-item">
+          <h3>6. What it does NOT do (clearing up myths)</h3>
+          <p>
+            GoGuardian is <strong>not</strong> a global password keylogger: it does not read what
+            you type into standard <code>password</code> boxes on normal login pages, and it does
+            not secretly turn on the webcam without a video call. (Visible unmasked passwords in a
+            screenshot, or secrets pasted into an AI chatbot, would still be captured.)
+          </p>
+          <p class="tech-note advanced-only">
+            <code>1.js</code> and <code>11.js</code> inspect visible <code>innerText</code>/metadata
+            rather than <code>input.value</code>; <code>19.js</code> is scoped in
+            <code>manifest.json</code> strictly to 7 AI/search origins.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Questions Parents Can Ask Their School District</h2>
+      <ul class="tight">
+        <li><strong>After-hours &amp; weekend rules:</strong> Are school-hours and school-IP scheduling limits enabled, or is monitoring running 24/7 at home?</li>
+        <li><strong>Data retention:</strong> How long are captured screenshots, browsing logs, and AI chatbot prompts stored, and when are they deleted?</li>
+        <li><strong>Who has access:</strong> Which staff members can view live student screens, receive safety/Smart Alerts, or inspect saved snapshots?</li>
+        <li><strong>Personal home devices:</strong> If a student signs into Chrome with a school Google account on a family-owned PC or Mac, does the district restrict monitoring to managed Chromebooks only?</li>
+        <li><strong>Transparency to families:</strong> Are parents and students notified in writing about Google Docs scanning, AI prompt logging, and live screen capture?</li>
+      </ul>
+    </section>
+
+    <div class="callout in-plain-english simple-only">
+      <div>
+        <strong>Want to verify the code-level details?</strong> Switch to <strong>Advanced</strong>
+        mode to view exact Manifest V3 permissions, the 10 backend domains, internal code paths, and
+        the offline forensic pipeline.
+      </div>
+      <button type="button" class="btn secondary" data-enable-advanced>Switch to Advanced View</button>
+    </div>
+
     <div class="callout warn">
-      <strong>Copyright &amp; Scope Notice:</strong> Proprietary GoGuardian source bundles, assets,
+      <strong>Copyright &amp; Privacy Notice:</strong> Proprietary GoGuardian source bundles, assets,
       and ML weights are <strong>not</strong> redistributed in this repository due to copyright.
       All explanations here are original technical documentation based on static inspection.
       No student, teacher, district, or credential data is included.
     </div>
 
-    <div class="grid-2">
+    <div class="grid-2 advanced-only">
       <section class="card">
         <h2>Manifest V3 Permissions <span class="badge blue">manifest.json</span></h2>
         <p class="muted">
@@ -70,18 +222,17 @@
       </section>
 
       <section class="card">
-        <h2>At-a-Glance: What Is vs. Isn't Tracked</h2>
-        <p class="muted">A quick summary of the biggest behavioral findings verified in code:</p>
+        <h2>Advanced Technical Summary <span class="badge green">v4.1.246</span></h2>
         <ul class="tight">
-          <li><strong>Tracked continuously:</strong> Every tab URL, title, focus/idle duration, visible <code>&lt;iframe&gt;</code> URLs &amp; sizes, full visible page <code>innerText</code>, Google Docs text &amp; titles, YouTube video metadata, AI chatbot prompts, and periodic JPEG/WebP screenshots.</li>
-          <li><strong>Actively controlled:</strong> Live teacher screen lock, remote tab open/close (neutralizing <code>beforeunload</code> confirmation dialogs), Google Meet mic/camera auto-mute, live screen annotations, and disabling blocked Chrome extensions.</li>
-          <li><strong>NOT a global password logger:</strong> Content scripts do not read general <code>&lt;input type="password"&gt;</code> values on arbitrary login forms. However, visible unmasked passwords in screenshots or secrets pasted into supported AI chatbots would be captured.</li>
-          <li><strong>Webcam &amp; camera previews:</strong> GoGuardian does <em>not</em> silently activate your webcam (no <code>getUserMedia</code> in <code>background.js</code>) and cannot screenshot ChromeOS's native <code>chrome://camera-app</code>. However, if you view yourself on any normal <code>https://</code> website (Meet/Zoom preview, webcam site, photo booth), periodic and live tab screenshots <strong>will</strong> capture your face and whatever is visible in that tab.</li>
+          <li><strong>Entity flushing:</strong> Tab state, titles, idle timers, and iframe URLs batch to <code>Zephyr</code> every 60s (or 1s under increased flush rate).</li>
+          <li><strong><code>about:blank</code> bypasses defeated:</strong> Dynamically injects <code>goguardian-21.js</code> (<code>html2canvas-pro</code>) for visual capture and uses <code>webNavigation.getAllFrames</code> to log embedded iframe URLs and Panther categories.</li>
+          <li><strong>Extension control:</strong> Syncs all installed extensions via <code>SyncInstalledExtensions</code> and disables policy-blocked extensions via <code>chrome.management.setEnabled</code>.</li>
+          <li><strong>25-second watchdog:</strong> Pings content scripts across open tabs every 25 seconds to check script health.</li>
         </ul>
       </section>
     </div>
 
-    <section class="card">
+    <section class="card advanced-only">
       <h2>Backend Microservice Topology <span class="badge green">10 Services + Pusher + Twilio</span></h2>
       <p class="muted">
         Rather than a single endpoint, the extension's service worker routes telemetry, policy,
@@ -114,29 +265,33 @@
     </section>
 
     <section class="card">
-      <h2>Explore Each Subsystem</h2>
+      <h2>Explore Each Topic</h2>
       <div class="grid-3">
         <div>
-          <h3><a href="/telemetry">1. Telemetry &amp; Device &rarr;</a></h3>
-          <p class="muted">Entity flushing, <code>captureVisibleTab</code>, <code>about:blank</code> + iframe logging, hardware/extension profiling, and the MV3 offscreen HTML scraper.</p>
+          <h3><a href="/telemetry">1. Screens, Webcams &amp; Privacy &rarr;</a></h3>
+          <p class="muted">Screenshots, webcam previews, <code>about:blank</code> tabs + iframes, hardware profiling, and installed extensions.</p>
         </div>
         <div>
-          <h3><a href="/ai-and-docs">2. AI, Docs &amp; ML &rarr;</a></h3>
-          <p class="muted">Server-pushed AI chatbot adapters, Google Docs HTML forcing, YouTube player hooks, off-task ML scoring, Beacon, and TF.js image scanning.</p>
+          <h3><a href="/ai-and-docs">2. AI Chatbots &amp; Google Docs &rarr;</a></h3>
+          <p class="muted">Prompt logging on 7 AI platforms, Google Docs text unwrapping, YouTube hooks, off-task AI, and image scanning.</p>
         </div>
         <div>
-          <h3><a href="/filtering">3. Filtering &amp; Panther &rarr;</a></h3>
-          <p class="muted">4-layer <code>webRequest</code> pipeline, <code>sub_frame</code> rules, Panther lookups, bypass passwords, and an interactive <code>*.translate.goog</code> decoder.</p>
+          <h3><a href="/filtering">3. Site Filtering &amp; Schedules &rarr;</a></h3>
+          <p class="muted">How websites are blocked, Google Translate proxy unwrapping, and how after-hours scheduling works.</p>
         </div>
       </div>
-      <div class="grid-2" style="margin-top:0.6rem;">
+      <div class="grid-3" style="margin-top:0.75rem;">
         <div>
           <h3><a href="/teacher-control">4. Teacher Live Control &rarr;</a></h3>
-          <p class="muted">Pusher channels, 3-second <code>LiveState v6</code> streaming, screen lock, <code>beforeunload</code> removal, Google Meet auto-mute, and live screen annotations.</p>
+          <p class="muted">3-second screen streaming, screen locks, forced tab closing, Meet auto-mute, and live screen annotations.</p>
         </div>
         <div>
-          <h3><a href="/scripts">5. All 22 Scripts &amp; IPC &rarr;</a></h3>
-          <p class="muted">Filterable reference matrix of <code>goguardian-1.js</code> through <code>22.js</code> and all internal <code>chrome.runtime</code> IPC channels.</p>
+          <h3><a href="/methodology">5. How This Info Was Obtained &rarr;</a></h3>
+          <p class="muted">Plain-English summary plus the complete offline ChromeOS Flex decryption &amp; forensic pipeline.</p>
+        </div>
+        <div>
+          <h3><a href="/scripts">6. All 22 Scripts &amp; IPC &rarr;</a></h3>
+          <p class="muted">Searchable reference table of every GoGuardian page script (<code>1.js</code>–<code>22.js</code>) and internal message channel.</p>
         </div>
       </div>
     </section>

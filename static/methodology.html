@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How This Information Was Obtained — GoGuardian Explained</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <div>
+          <span class="brand-title">GoGuardian Explained</span>
+          <span class="brand-sub">Offline Research &amp; Verification Methodology</span>
+        </div>
+      </a>
+      <div class="topbar-right">
+        <nav class="nav" aria-label="Documentation sections">
+          <a href="/">Overview</a>
+          <a href="/telemetry">Screens &amp; Privacy</a>
+          <a href="/ai-and-docs">AI &amp; Docs</a>
+          <a href="/filtering">Filtering</a>
+          <a href="/teacher-control">Teacher Control</a>
+          <a href="/methodology">How We Know</a>
+          <a href="/scripts">22 Scripts</a>
+        </nav>
+        <div class="mode-switch" role="group" aria-label="Reading mode">
+          <button type="button" data-mode="simple" class="active" aria-pressed="true">Simple</button>
+          <button type="button" data-mode="advanced" aria-pressed="false">Advanced</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>How This Information Was Obtained</h1>
+      <p>
+        Every claim on this site comes directly from inspecting the GoGuardian Chrome extension and
+        its local browser storage inside an isolated, offline ChromeOS Flex test virtual machine—not
+        from guessing or rumors.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>In Plain English: How the Research Worked</h2>
+      <div class="plain-list">
+        <article class="parent-item">
+          <h3>1. Local test virtual machine only</h3>
+          <p>
+            All inspection was performed offline on a local ChromeOS Flex virtual machine using the
+            researcher's own test login. No external servers were breached, and no other students'
+            accounts or devices were accessed.
+          </p>
+        </article>
+        <article class="parent-item">
+          <h3>2. Unlocking the local VM disk</h3>
+          <p>
+            Using the account's own password to unlock the virtual machine's encrypted user storage
+            offline, the local Chrome browser profile folder was extracted so its installed
+            extensions and storage files could be read.
+          </p>
+        </article>
+        <article class="parent-item">
+          <h3>3. Reading the installed Chrome extension</h3>
+          <p>
+            Chrome extensions are packaged locally on disk as JavaScript and JSON files
+            (<code>manifest.json</code>, the background service worker, and 22 page scripts). Reading
+            those files reveals exact permissions, monitoring hooks, and server endpoints.
+          </p>
+        </article>
+        <article class="parent-item">
+          <h3>4. Checking local extension storage</h3>
+          <p>
+            Examining the extension's local Chrome database confirmed what gets saved on disk before
+            upload—such as buffered JPEG screenshots and downloaded policy settings. All personal
+            data, credentials, school rules, and proprietary code were removed before publishing.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <div class="callout in-plain-english simple-only">
+      <div>
+        <strong>Technical reader?</strong> Switch to <strong>Advanced</strong> mode to view the
+        full offline ChromeOS Flex cryptographic decryption chain (<code>USS</code>,
+        <code>fscrypt</code> v2, <code>ext4</code> extent trees, LevelDB, and BSON state parsing).
+      </div>
+      <button type="button" class="btn secondary" data-enable-advanced>Show Full Cryptographic &amp; Forensic Pipeline</button>
+    </div>
+
+    <div class="advanced-only">
+      <section class="card">
+        <h2>End-to-End Offline Forensic Pipeline <span class="badge blue">6 Stages</span></h2>
+        <pre>+--------------------------------------------------------------------------------+
+| 1. USER-SPACE EXT4 ACQUISITION                                                 |
+|    Raw ChromeOS Flex stateful partition image                                  |
+|      -> debugfs (no loop mount / CAP_SYS_ADMIN required)                       |
+|      -> /home/.shadow/&lt;user_hash&gt;/auth_factors/password.gaia                   |
+|      -> /home/.shadow/&lt;user_hash&gt;/uss.0                                        |
++--------------------------------------------------------------------------------+
+                                       |
+                                       v
++--------------------------------------------------------------------------------+
+| 2. TPM VS. SOFTWARE AUTH FACTOR                                                |
+|    Hardware Chromebooks bind to H1/Cr50/Ti50 TPM NVRAM &amp; PCRs.                 |
+|    ChromeOS Flex writes a software-wrapped password.gaia factor alongside      |
+|    swtpm NVRAM, allowing offline unwrapping with &lt;password&gt;.                   |
++--------------------------------------------------------------------------------+
+                                       |
+                                       v
++--------------------------------------------------------------------------------+
+| 3. CRYPTOHOME KDF &amp; AES-256-GCM USS UNWRAPPING                                 |
+|    SHA-256(ascii_salt_hex + password)[:16].hex()                               |
+|      -> scrypt(N=16384, r=8, p=1, dklen=64)                                    |
+|      -> HKDF-SHA256(info="cryptohome USS credential", len=32)                  |
+|      -> AES-256-GCM decrypt Wrapped Key Block (wkb_*) -> Intermediate Key      |
+|      -> AES-256-GCM decrypt uss.0 (uss_*) -> 352-byte FlatBuffer payload       |
++--------------------------------------------------------------------------------+
+                                       |
+                                       v
++--------------------------------------------------------------------------------+
+| 4. FLATBUFFER PARSING &amp; FSCRYPT V2 MASTER KEY VERIFICATION                     |
+|    UserSecretStashPayload field 0 -> 64-byte File Encryption Key (&lt;FEK&gt;)       |
+|      -> HKDF-SHA512(IKM=&lt;FEK&gt;, salt=0^64, info="fscrypt\0\1")[0:16] == &lt;key_id&gt;|
++--------------------------------------------------------------------------------+
+                                       |
+                                       v
++--------------------------------------------------------------------------------+
+| 5. OFFLINE EXT4 EXTENT TRAVERSAL &amp; FSCRYPT V2 DECRYPTION                       |
+|    Inode xattr 'encryption.c' (40 bytes) -> 16-byte per-inode nonce            |
+|      -> HKDF-SHA512 -&gt; AES-256-CTS-CBC (directory filenames)                   |
+|      -> HKDF-SHA512 -&gt; AES-256-XTS (4096B blocks via ext4 extent tree 0xf30a)  |
++--------------------------------------------------------------------------------+
+                                       |
+                                       v
++--------------------------------------------------------------------------------+
+| 6. CHROME PROFILE, LEVELDB &amp; EXTENSION STATIC ANALYSIS                         |
+|    - SQLite Cookies (ChromeOS v10: PBKDF2-HMAC-SHA1 + AES-128-CBC)             |
+|    - LevelDB SSTables (.ldb Snappy blocks) &amp; WAL (.log)                        |
+|    - Base64 JPEG screenshots &amp; Base64-wrapped BSON Redux store                 |
+|    - Static audit of manifest.json, background.js, offscreen &amp; 22 scripts      |
++--------------------------------------------------------------------------------+</pre>
+      </section>
+
+      <div class="grid-2">
+        <section class="card">
+          <h2>Stage 1 — User-Space <code>ext4</code> Extraction</h2>
+          <p class="muted">
+            In unprivileged containers where <code>mount -o loop</code> returns <code>EPERM</code>,
+            user-space <code>debugfs</code> inspects the raw ChromeOS Flex stateful partition
+            directly without kernel loop devices.
+          </p>
+          <ul class="tight">
+            <li>Listed <code>/home/.shadow</code> to locate the profile vault directory <code>/home/.shadow/&lt;user_hash&gt;/</code>.</li>
+            <li>Dumped <code>uss.0</code> (User Secret Stash ciphertext) and <code>auth_factors/password.gaia</code> (Protobuf KDF metadata) to disk for offline inspection.</li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <h2>Stage 2 — Hardware TPM vs. ChromeOS Flex</h2>
+          <p class="muted">
+            Official Chromebooks use dedicated H1/Cr50/Ti50 security chips to seal vault secrets to
+            TPM NVRAM and PCR measurements.
+          </p>
+          <ul class="tight">
+            <li>Because ChromeOS Flex runs on generic PC hardware without Google security chips, ChromiumOS <code>cryptohome</code> supports multi-factor User Secret Stash (<code>USS</code>) containers.</li>
+            <li>Even when a software TPM (<code>swtpm</code>) NVRAM state is present in a VM, <code>cryptohome</code> stores an independent software-wrapped <code>password.gaia</code> auth factor alongside the vault, allowing offline unwrapping from the account password alone.</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="card">
+          <h2>Stage 3 — Cryptohome KDF &amp; USS Unwrapping</h2>
+          <p class="muted">
+            <code>password.gaia</code> and <code>uss.0</code> are Protobuf messages encoding salts,
+            <code>scrypt</code> work factors (<code>N=16384</code>, <code>r=8</code>,
+            <code>p=1</code>), <code>ascii_salt_hex</code>, a Wrapped Key Block
+            (<code>wkb_tag</code>, <code>wkb_iv</code>, <code>wkb_ct</code>), and the USS
+            ciphertext (<code>uss_tag</code>, <code>uss_iv</code>, <code>uss_ct</code>).
+          </p>
+          <pre>h1 = sha256(ascii_salt_hex + password).digest()
+passkey = h1[:16].hex().encode("utf-8")
+d64 = scrypt(passkey, salt=salt_0, n=16384, r=8, p=1, dklen=64)
+derived_key = hkdf_sha256(ikm=d64, salt=b"", info=b"cryptohome USS credential", length=32)
+intermediate_key = aes_256_gcm_decrypt(derived_key, wkb_iv, wkb_ct, wkb_tag)
+uss_plaintext = aes_256_gcm_decrypt(intermediate_key, uss_iv, uss_ct, uss_tag)</pre>
+        </section>
+
+        <section class="card">
+          <h2>Stage 4 — FlatBuffer &amp; <code>fscrypt</code> v2 Key Verification</h2>
+          <p class="muted">
+            The decrypted 352-byte payload is a Google FlatBuffer table
+            (<code>UserSecretStashPayload</code>):
+          </p>
+          <ul class="tight">
+            <li>Reads the 64-byte File Encryption Key (<code>&lt;FEK&gt;</code>) from FlatBuffer field <code>0</code>.</li>
+            <li>Derives the Linux kernel <code>fscrypt</code> v2 master key identifier as <code>HKDF-SHA512(IKM=&lt;FEK&gt;, salt=0^64, info="fscrypt\0\1")[0:16]</code>.</li>
+            <li>Matching this 16-byte <code>&lt;key_id&gt;</code> against the encrypted directory superblock descriptor on disk verifies cryptographic correctness before touching any file data.</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="grid-2">
+        <section class="card">
+          <h2>Stage 5 — Offline <code>ext4</code> &amp; <code>fscrypt</code> v2 Decryption</h2>
+          <p class="muted">
+            Without kernel <code>fscryptctl</code>, an offline Python decryptor traverses raw
+            <code>ext4</code> metadata and extent trees directly:
+          </p>
+          <ul class="tight">
+            <li><strong>Per-inode xattr:</strong> Reads the 40-byte <code>encryption.c</code> extended attribute (<code>version=0x02</code>, <code>AES-256-XTS</code> contents, <code>AES-256-CTS</code> filenames, 16-byte master key ID, 16-byte nonce).</li>
+            <li><strong>Per-inode HKDF:</strong> Uses <code>HKDF-SHA512</code> with <code>&lt;FEK&gt;</code> and each inode's 16-byte nonce to derive a 64-byte file key or 32-byte directory name key.</li>
+            <li><strong>Filenames &amp; Extents:</strong> Decrypts filenames via <code>AES-256-CTS-CBC</code>, walks <code>ext4</code> extent trees (<code>0xf30a</code> leaf extents and interior <code>eh_depth &gt; 0</code> index nodes), and decrypts 4096-byte blocks with <code>AES-256-XTS</code> using a little-endian <code>block_index</code> tweak.</li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <h2>Stage 6 — LevelDB, Cookies &amp; Extension Analysis</h2>
+          <p class="muted">
+            Once the Chrome user profile directory was decrypted, application artifacts confirmed
+            what the extension stores and executes locally:
+          </p>
+          <ul class="tight">
+            <li><strong>Extension LevelDB:</strong> Parsed <code>Local Extension Settings/&lt;extension_id&gt;/</code> <code>.ldb</code> SSTables (Snappy-compressed blocks) and <code>.log</code> WAL files, recovering buffered Base64 JPEG screenshots (<code>screenshot_&lt;seqId&gt;_dataUrl</code>) and the Base64-wrapped BSON Redux state (<code>store</code>).</li>
+            <li><strong>ChromeOS <code>v10</code> Cookies:</strong> Inspected SQLite cookie storage (encrypted with <code>AES-128-CBC</code> using Chromium's <code>PBKDF2-HMAC-SHA1("peanuts", "saltysalt", 1, 16)</code> key).</li>
+            <li><strong>Extension Static Audit:</strong> Analyzed <code>manifest.json</code>, <code>background.js</code>, <code>offscreen-document.js</code>, UI bundles (<code>lock.js</code>, <code>chat.js</code>, <code>checkin.js</code>, <code>presentation.js</code>, <code>video-call.js</code>), and all 22 content scripts (<code>goguardian-1.js</code>–<code>22.js</code>).</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>MIT Licensed Documentation &bull; Contact: <a href="mailto:goguardian@mitch.pro">goguardian@mitch.pro</a></span>
+    <span id="rust-status" class="badge">Checking Rust backend...</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

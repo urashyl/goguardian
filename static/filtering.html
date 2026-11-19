@@ -11,18 +11,25 @@
     <div class="topbar-inner">
       <a class="brand" href="/">
         <div>
-          <span class="brand-title">GoGuardian MV3 Architecture Docs</span>
+          <span class="brand-title">GoGuardian Explained</span>
           <span class="brand-sub">webRequest Blocking Pipeline, Panther &amp; SafeTranslate</span>
         </div>
       </a>
-      <nav class="nav" aria-label="Documentation sections">
-        <a href="/">Overview</a>
-        <a href="/telemetry">Telemetry &amp; Device</a>
-        <a href="/ai-and-docs">AI, Docs &amp; ML</a>
-        <a href="/filtering">Filtering &amp; Panther</a>
-        <a href="/teacher-control">Teacher Control</a>
-        <a href="/scripts">22 Scripts &amp; IPC</a>
-      </nav>
+      <div class="topbar-right">
+        <nav class="nav" aria-label="Documentation sections">
+          <a href="/">Overview</a>
+          <a href="/telemetry">Screens &amp; Privacy</a>
+          <a href="/ai-and-docs">AI &amp; Docs</a>
+          <a href="/filtering">Filtering</a>
+          <a href="/teacher-control">Teacher Control</a>
+          <a href="/methodology">How We Know</a>
+          <a href="/scripts">22 Scripts</a>
+        </nav>
+        <div class="mode-switch" role="group" aria-label="Reading mode">
+          <button type="button" data-mode="simple" class="active" aria-pressed="true">Simple</button>
+          <button type="button" data-mode="advanced" aria-pressed="false">Advanced</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -34,6 +41,15 @@
         categorizes unknown domains, unwraps Google Translate proxies, and applies policy schedules.
       </p>
     </section>
+
+    <div class="callout in-plain-english simple-only">
+      <div>
+        <strong>In plain English:</strong> Every website you visit is checked against school blocklists,
+        Google Translate proxy links are automatically unwrapped, and unless your district turns on
+        school-hours scheduling, monitoring and filtering stay on 24/7 at home.
+      </div>
+      <button type="button" class="btn secondary" data-enable-advanced>Show Advanced Details</button>
+    </div>
 
     <section class="card">
       <h2>1. The 4-Layer <code>webRequest.onBeforeRequest</code> Pipeline <span class="badge blue">Blocking</span></h2>
@@ -96,8 +112,9 @@
           <li>Submitted passwords are verified against <code>GET /v1/admin/validate-bypass-password</code>.</li>
           <li>If valid, the backend returns <code>durationMs</code> and the extension caches a temporary hostname bypass in memory.</li>
         </ul>
-        <h3 style="margin-top:0.9rem;"><code>GET /v1/policy</code> Top-Level Sections</h3>
-        <pre>{
+        <div class="advanced-only">
+          <h3 style="margin-top:0.9rem;"><code>GET /v1/policy</code> Top-Level Sections</h3>
+          <pre>{
   "privacySettings":  { /* chromebookOnly, onlyMonitorManagedDevices, scheduling */ },
   "adminSettings":    { /* orgSettings, categories, sites, videoPolicy, flaggedTerms, apps, overrides */ },
   "teacherSettings":  { /* active, allowActiveSessionStatus */ },
@@ -108,6 +125,7 @@
   "discoverSettings": { /* active */ },
   "aiEventsSettings": { /* adapterSettings (live AI DOM selectors) */ }
 }</pre>
+        </div>
       </section>
     </div>
 
