@@ -8,6 +8,10 @@
     const href = link.getAttribute("href");
     if (href === currentPath || (currentPath === "/index" && href === "/")) {
       link.classList.add("active");
+      const nav = link.parentElement;
+      if (nav && nav.scrollWidth > nav.clientWidth) {
+        link.scrollIntoView({ inline: "center", block: "nearest" });
+      }
     }
   });
 
